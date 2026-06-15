@@ -7,13 +7,16 @@
   },
   "scripts": {
     "dev": "astro dev",
-    "build": "astro build",
+    "build": "node scripts/build-static.mjs",
+    "build:raw": "astro build",
     "preview": "astro preview",
     "astro": "astro"
   },
   "dependencies": {
     "@astrojs/mdx": "^6.0.3",
-    "@astrojs/node": "^10.1.4",
     "astro": "^6.4.7"
+  },
+  "devDependencies": {
+    "@types/node": "^25.9.3"
   }
 }

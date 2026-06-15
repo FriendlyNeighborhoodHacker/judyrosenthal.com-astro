@@ -1,0 +1,147 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+
+export const prerender = false;
+
+// DEV-ONLY page. In production this redirects home (and never gets built).
+if (!import.meta.env.DEV) {
+  return Astro.redirect('/');
+}
+
+const page = Astro.url.searchParams.get('page') ?? '';
+---
+
+<BaseLayout title="Edit Content" bodyClass="page-edit">
+  <main class="editor">
+    <header class="editor-bar">
+      <h1>Edit Content</h1>
+      <div class="editor-meta">
+        <span>Page: <code id="page-path">{page}</code></span>
+        <a class="editor-view" href={page} target="_blank" rel="noopener">View page ↗</a>
+      </div>
+    </header>
+
+    <p id="editor-status" class="editor-status" role="status"></p>
+
+    <form id="edit-form">
+      <label class="field">
+        <span>Frontmatter (YAML between <code>---</code> fences)</span>
+        <textarea id="frontmatter" spellcheck="false" rows="10"></textarea>
+      </label>
+
+      <label class="field">
+        <span>Body (Markdown / MDX)</span>
+        <textarea id="body" spellcheck="false" rows="24"></textarea>
+      </label>
+
+      <div class="editor-actions">
+        <button type="submit" id="save-btn">Save</button>
+        <button type="button" id="reload-btn" class="secondary">Reload from disk</button>
+      </div>
+    </form>
+  </main>
+</BaseLayout>
+
+<style>
+  .editor {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 2rem 1.5rem 4rem;
+    font-family: system-ui, sans-serif;
+  }
+  .editor-bar {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    border-bottom: 1px solid #ddd;
+    padding-bottom: 0.75rem;
+    margin-bottom: 1rem;
+  }
+  .editor-bar h1 { margin: 0; font-size: 1.4rem; }
+  .editor-meta { font-size: 0.85rem; color: #555; display: flex; gap: 1rem; }
+  .editor-meta code { background: #f3f3f3; padding: 0.1rem 0.3rem; border-radius: 3px; }
+  .editor-view { color: #1a5; text-decoration: none; }
+  .editor-status { min-height: 1.2rem; font-size: 0.9rem; }
+  .editor-status.ok { color: #1a7f37; }
+  .editor-status.err { color: #c0392b; }
+  .field { display: block; margin-bottom: 1.25rem; }
+  .field > span { display: block; font-weight: 600; margin-bottom: 0.4rem; font-size: 0.9rem; }
+  textarea {
+    width: 100%;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 0.85rem;
+    line-height: 1.5;
+    padding: 0.75rem;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    resize: vertical;
+    box-sizing: border-box;
+  }
+  #frontmatter { background: #fafafe; }
+  .editor-actions { display: flex; gap: 0.75rem; }
+  button {
+    padding: 0.6rem 1.4rem;
+    border: none;
+    border-radius: 6px;
+    background: #1a5;
+    color: white;
+    font-size: 0.95rem;
+    cursor: pointer;
+  }
+  button.secondary { background: #eee; color: #333; }
+  button:disabled { opacity: 0.6; cursor: default; }
+</style>
+
+<script>
+  const page = document.getElementById('page-path')?.textContent?.trim() ?? '';
+  const fmEl = document.getElementById('frontmatter') as HTMLTextAreaElement;
+  const bodyEl = document.getElementById('body') as HTMLTextAreaElement;
+  const statusEl = document.getElementById('editor-status') as HTMLElement;
+  const form = document.getElementById('edit-form') as HTMLFormElement;
+  const saveBtn = document.getElementById('save-btn') as HTMLButtonElement;
+  const reloadBtn = document.getElementById('reload-btn') as HTMLButtonElement;
+
+  function setStatus(msg: string, kind: '' | 'ok' | 'err' = '') {
+    statusEl.textContent = msg;
+    statusEl.className = 'editor-status' + (kind ? ' ' + kind : '');
+  }
+
+  async function load() {
+    setStatus('Loading…');
+    try {
+      const res = await fetch(`/api/save-content?page=${encodeURIComponent(page)}`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to load');
+      fmEl.value = data.frontmatter;
+      bodyEl.value = data.body;
+      setStatus(`Loaded ${data.file}`, 'ok');
+    } catch (err) {
+      setStatus(String(err), 'err');
+    }
+  }
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    saveBtn.disabled = true;
+    setStatus('Saving…');
+    try {
+      const res = await fetch('/api/save-content', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ page, frontmatter: fmEl.value, body: bodyEl.value }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to save');
+      setStatus('Saved ✓ (the page will hot-reload)', 'ok');
+    } catch (err) {
+      setStatus(String(err), 'err');
+    } finally {
+      saveBtn.disabled = false;
+    }
+  });
+
+  reloadBtn.addEventListener('click', load);
+  load();
+</script>

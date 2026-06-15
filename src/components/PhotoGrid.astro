@@ -1,30 +1,59 @@
 ---
 import { Image } from 'astro:assets';
+import fs from 'node:fs/promises';
+import path from 'node:path';
 
 interface Props {
   albumDir: string;
+  /** Optional inline fallback captions (overridden by descriptions.json if present). */
   descriptions?: Record<string, string>;
 }
 
-const { albumDir, descriptions = {} } = Astro.props;
+const { albumDir, descriptions: inlineDescriptions = {} } = Astro.props;
 
 // Import all images from the album directory
-const images = import.meta.glob<{ default: ImageMetadata }>('/src/assets/images/**/*.{jpeg,jpg,png,gif}');
+const images = import.meta.glob<{ default: ImageMetadata }>('/src/assets/images/**/*.{jpeg,jpg,png,gif,webp}');
 
 // Filter images that match the album directory (exact directory, not just substring)
-const normalizedDir = `/src/assets/images/${albumDir.replace(/^\/+|\/+$/g, '')}/`;
-const albumImages = Object.entries(images)
-  .filter(([path]) => path.startsWith(normalizedDir))
-  .sort(([a], [b]) => a.localeCompare(b)); // Sort alphabetically by filename
+const cleanDir = albumDir.replace(/^\/+|\/+$/g, '');
+const normalizedDir = `/src/assets/images/${cleanDir}/`;
+let albumImages = Object.entries(images).filter(([path]) => path.startsWith(normalizedDir));
+
+// Read the descriptions.json sidecar (order + captions) written by the photo manager.
+let sidecar: { order?: string[]; descriptions?: Record<string, string> } = {};
+try {
+  const metaPath = path.join(process.cwd(), 'src', 'assets', 'images', cleanDir, 'descriptions.json');
+  const raw = await fs.readFile(metaPath, 'utf-8');
+  sidecar = JSON.parse(raw);
+} catch {
+  // No sidecar — fall back to inline descriptions + alphabetical order.
+}
+
+const captions: Record<string, string> = { ...inlineDescriptions, ...(sidecar.descriptions ?? {}) };
+const order = sidecar.order ?? [];
+
+const filenameOf = (p: string) => p.split('/').pop() || '';
+
+// Apply explicit order first, then alphabetical for the rest.
+albumImages.sort(([a], [b]) => {
+  const fa = filenameOf(a);
+  const fb = filenameOf(b);
+  const ia = order.indexOf(fa);
+  const ib = order.indexOf(fb);
+  if (ia !== -1 && ib !== -1) return ia - ib;
+  if (ia !== -1) return -1;
+  if (ib !== -1) return 1;
+  return fa.localeCompare(fb);
+});
 ---
 
 {albumImages.length > 0 && (
   <div class="photo-grid" id="photo-grid">
     {albumImages.map(async ([path, imageModule]) => {
       const image = await imageModule();
-      const filename = path.split('/').pop() || '';
-      const description = descriptions[filename] || '';
-      
+      const filename = filenameOf(path);
+      const description = captions[filename] || '';
+
       return (
         <div class="photo-grid-item" data-filename={filename} data-desc={description}>
           <Image

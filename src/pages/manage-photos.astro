@@ -1,0 +1,231 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+
+export const prerender = false;
+
+// DEV-ONLY page. In production this redirects home (and never gets built).
+if (!import.meta.env.DEV) {
+  return Astro.redirect('/');
+}
+
+const album = Astro.url.searchParams.get('album') ?? '';
+const page = Astro.url.searchParams.get('page') ?? '';
+---
+
+<BaseLayout title="Manage Photos" bodyClass="page-manage">
+  <main class="manager">
+    <header class="manager-bar">
+      <h1>Manage Photos</h1>
+      <div class="manager-meta">
+        <span>Album: <code id="album-path">{album}</code></span>
+        {page && <a class="manager-view" href={page} target="_blank" rel="noopener">View page ↗</a>}
+      </div>
+    </header>
+
+    <p id="manager-status" class="manager-status" role="status"></p>
+
+    <section class="uploader">
+      <label class="upload-label">
+        Upload photos
+        <input type="file" id="file-input" accept="image/*" multiple />
+      </label>
+      <button type="button" id="upload-btn">Upload</button>
+    </section>
+
+    <p class="hint">Drag the ☰ handle to reorder. Edit captions inline. Changes save automatically.</p>
+
+    <ul class="photo-list" id="photo-list"></ul>
+  </main>
+</BaseLayout>
+
+<style>
+  .manager { max-width: 760px; margin: 0 auto; padding: 2rem 1.5rem 4rem; font-family: system-ui, sans-serif; }
+  .manager-bar { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem; border-bottom: 1px solid #ddd; padding-bottom: 0.75rem; margin-bottom: 1rem; }
+  .manager-bar h1 { margin: 0; font-size: 1.4rem; }
+  .manager-meta { font-size: 0.85rem; color: #555; display: flex; gap: 1rem; }
+  .manager-meta code { background: #f3f3f3; padding: 0.1rem 0.3rem; border-radius: 3px; }
+  .manager-view { color: #1a5; text-decoration: none; }
+  .manager-status { min-height: 1.2rem; font-size: 0.9rem; }
+  .manager-status.ok { color: #1a7f37; }
+  .manager-status.err { color: #c0392b; }
+  .uploader { display: flex; align-items: center; gap: 0.75rem; margin: 0.5rem 0 1rem; }
+  .upload-label { font-size: 0.9rem; display: flex; flex-direction: column; gap: 0.3rem; }
+  .hint { font-size: 0.8rem; color: #777; margin: 0.25rem 0 1rem; }
+  button { padding: 0.5rem 1.1rem; border: none; border-radius: 6px; background: #1a5; color: white; font-size: 0.9rem; cursor: pointer; }
+  button.danger { background: #c0392b; }
+  button:disabled { opacity: 0.6; cursor: default; }
+  .photo-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.6rem; }
+  .photo-item { display: flex; align-items: center; gap: 0.75rem; padding: 0.5rem; border: 1px solid #e2e2e2; border-radius: 8px; background: #fff; }
+  .photo-item.dragging { opacity: 0.5; }
+  .photo-item.drag-over { border-color: #1a5; }
+  .drag-handle { cursor: grab; font-size: 1.2rem; color: #999; user-select: none; padding: 0 0.25rem; }
+  .photo-thumb { width: 72px; height: 72px; object-fit: cover; border-radius: 6px; flex-shrink: 0; background: #f0f0f0; }
+  .photo-fields { flex: 1; display: flex; flex-direction: column; gap: 0.25rem; min-width: 0; }
+  .photo-name { font-size: 0.75rem; color: #888; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .photo-caption { width: 100%; padding: 0.4rem; border: 1px solid #ccc; border-radius: 5px; font-size: 0.85rem; box-sizing: border-box; }
+</style>
+
+<script>
+  const album = document.getElementById('album-path')?.textContent?.trim() ?? '';
+  const statusEl = document.getElementById('manager-status') as HTMLElement;
+  const listEl = document.getElementById('photo-list') as HTMLUListElement;
+  const fileInput = document.getElementById('file-input') as HTMLInputElement;
+  const uploadBtn = document.getElementById('upload-btn') as HTMLButtonElement;
+
+  type Photo = { filename: string; caption: string };
+  let photos: Photo[] = [];
+
+  function setStatus(msg: string, kind: '' | 'ok' | 'err' = '') {
+    statusEl.textContent = msg;
+    statusEl.className = 'manager-status' + (kind ? ' ' + kind : '');
+  }
+
+  async function load() {
+    setStatus('Loading…');
+    try {
+      const res = await fetch(`/api/photos/list?album=${encodeURIComponent(album)}`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to load');
+      photos = data.photos;
+      render();
+      setStatus(`${photos.length} photo(s)`, 'ok');
+    } catch (err) {
+      setStatus(String(err), 'err');
+    }
+  }
+
+  function render() {
+    listEl.innerHTML = '';
+    photos.forEach((photo, index) => {
+      const li = document.createElement('li');
+      li.className = 'photo-item';
+      li.draggable = true;
+      li.dataset.index = String(index);
+
+      const handle = document.createElement('span');
+      handle.className = 'drag-handle';
+      handle.textContent = '☰';
+
+      const img = document.createElement('img');
+      img.className = 'photo-thumb';
+      img.loading = 'lazy';
+      img.alt = photo.caption || photo.filename;
+      img.src = `/api/photos/thumb?album=${encodeURIComponent(album)}&file=${encodeURIComponent(photo.filename)}`;
+
+      const fields = document.createElement('div');
+      fields.className = 'photo-fields';
+
+      const name = document.createElement('div');
+      name.className = 'photo-name';
+      name.textContent = photo.filename;
+
+      const caption = document.createElement('input');
+      caption.className = 'photo-caption';
+      caption.type = 'text';
+      caption.placeholder = 'Caption…';
+      caption.value = photo.caption;
+      caption.addEventListener('change', () => {
+        photos[index].caption = caption.value;
+        saveMeta();
+      });
+
+      fields.append(name, caption);
+
+      const del = document.createElement('button');
+      del.className = 'danger';
+      del.textContent = 'Delete';
+      del.addEventListener('click', () => deletePhoto(photo.filename));
+
+      li.append(handle, img, fields, del);
+      attachDrag(li);
+      listEl.append(li);
+    });
+  }
+
+  /* Drag-and-drop reordering */
+  let dragIndex = -1;
+  function attachDrag(li: HTMLLIElement) {
+    li.addEventListener('dragstart', () => {
+      dragIndex = Number(li.dataset.index);
+      li.classList.add('dragging');
+    });
+    li.addEventListener('dragend', () => li.classList.remove('dragging'));
+    li.addEventListener('dragover', (e) => { e.preventDefault(); li.classList.add('drag-over'); });
+    li.addEventListener('dragleave', () => li.classList.remove('drag-over'));
+    li.addEventListener('drop', (e) => {
+      e.preventDefault();
+      li.classList.remove('drag-over');
+      const dropIndex = Number(li.dataset.index);
+      if (dragIndex === -1 || dragIndex === dropIndex) return;
+      const [moved] = photos.splice(dragIndex, 1);
+      photos.splice(dropIndex, 0, moved);
+      dragIndex = -1;
+      render();
+      saveMeta();
+    });
+  }
+
+  async function saveMeta() {
+    const order = photos.map((p) => p.filename);
+    const descriptions: Record<string, string> = {};
+    photos.forEach((p) => { if (p.caption) descriptions[p.filename] = p.caption; });
+    setStatus('Saving…');
+    try {
+      const res = await fetch('/api/photos/save-meta', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ album, order, descriptions }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Save failed');
+      setStatus('Saved ✓', 'ok');
+    } catch (err) {
+      setStatus(String(err), 'err');
+    }
+  }
+
+  async function deletePhoto(filename: string) {
+    if (!confirm(`Delete ${filename}? This removes the file from disk.`)) return;
+    setStatus('Deleting…');
+    try {
+      const res = await fetch('/api/photos/delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ album, filename }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Delete failed');
+      photos = photos.filter((p) => p.filename !== filename);
+      render();
+      setStatus('Deleted ✓', 'ok');
+    } catch (err) {
+      setStatus(String(err), 'err');
+    }
+  }
+
+  uploadBtn.addEventListener('click', async () => {
+    if (!fileInput.files || fileInput.files.length === 0) {
+      setStatus('Choose file(s) first', 'err');
+      return;
+    }
+    const form = new FormData();
+    form.set('album', album);
+    Array.from(fileInput.files).forEach((f) => form.append('files', f));
+    uploadBtn.disabled = true;
+    setStatus('Uploading…');
+    try {
+      const res = await fetch('/api/photos/upload', { method: 'POST', body: form });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Upload failed');
+      fileInput.value = '';
+      await load();
+      setStatus(`Uploaded ${data.saved.length} file(s) ✓`, 'ok');
+    } catch (err) {
+      setStatus(String(err), 'err');
+    } finally {
+      uploadBtn.disabled = false;
+    }
+  });
+
+  load();
+</script>

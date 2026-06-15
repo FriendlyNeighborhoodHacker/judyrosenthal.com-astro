@@ -7,10 +7,4 @@ import Slideshow from '../components/Slideshow.astro';
 <BaseLayout title="Judy Rosenthal" bodyClass="page-home">
   <Header isHome={true} />
   <Slideshow />
-
-  {import.meta.env.DEV && (
-    <div class="dev-tools">
-      <a href="/manage-photos?album=homepage&page=/">📸 Manage Homepage Slides</a>
-    </div>
-  )}
 </BaseLayout>
