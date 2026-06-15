@@ -1,0 +1,72 @@
+---
+// Lightbox component for photo galleries
+---
+
+<div id="lightbox" role="dialog" aria-modal="true">
+  <button class="lb-close" aria-label="Close">&times;</button>
+  <button class="lb-prev" aria-label="Previous">&lsaquo;</button>
+  <img class="lb-img" src="" alt="">
+  <p class="lb-caption"></p>
+  <p class="lb-filename"></p>
+  <button class="lb-next" aria-label="Next">&rsaquo;</button>
+</div>
+
+<script>
+  (function () {
+    const items = Array.from(document.querySelectorAll('.photo-grid-item'));
+    if (!items.length) return;
+    
+    const lb = document.getElementById('lightbox') as HTMLElement | null;
+    if (!lb) return;
+
+    const lbImg = lb.querySelector('.lb-img') as HTMLImageElement;
+    const lbCap = lb.querySelector('.lb-caption') as HTMLElement;
+    const lbFn = lb.querySelector('.lb-filename') as HTMLElement;
+    let cur = 0;
+
+    function show(i: number) {
+      cur = ((i % items.length) + items.length) % items.length;
+      const item = items[cur] as HTMLElement;
+
+      // Prefer a larger image if provided via srcset, otherwise use the thumbnail src
+      const img = item.querySelector('img') as HTMLImageElement;
+      if (img) {
+        // currentSrc resolves the best candidate from srcset (already optimized & larger)
+        lbImg.src = img.currentSrc || img.src;
+      }
+
+      lbImg.alt = item.dataset.desc || '';
+      lbCap.textContent = item.dataset.desc || '';
+      lbFn.textContent = item.dataset.filename || '';
+      lb!.classList.add('open');
+    }
+
+    function close() {
+      lb!.classList.remove('open');
+      lbImg.src = '';
+    }
+
+    items.forEach((el, i) => {
+      el.addEventListener('click', () => { show(i); });
+    });
+
+    const closeBtn = lb.querySelector('.lb-close');
+    const prevBtn = lb.querySelector('.lb-prev');
+    const nextBtn = lb.querySelector('.lb-next');
+    
+    closeBtn?.addEventListener('click', close);
+    prevBtn?.addEventListener('click', () => { show(cur - 1); });
+    nextBtn?.addEventListener('click', () => { show(cur + 1); });
+
+    lb.addEventListener('click', (e) => { 
+      if (e.target === lb) close(); 
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (!lb.classList.contains('open')) return;
+      if (e.key === 'Escape') close();
+      if (e.key === 'ArrowLeft') show(cur - 1);
+      if (e.key === 'ArrowRight') show(cur + 1);
+    });
+  })();
+</script>

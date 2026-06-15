@@ -1,0 +1,22 @@
+---
+import { Image } from 'astro:assets';
+
+interface Props {
+  hero: string;
+  heroHeight?: string;
+  heroPosition?: string;
+  alt?: string;
+}
+
+const { hero, heroHeight = '250px', heroPosition = 'center', alt = '' } = Astro.props;
+
+const images = import.meta.glob<{ default: ImageMetadata }>('/src/assets/**/*.{jpeg,jpg,png,gif}');
+const imagePath = `/src/assets/${hero}`;
+const imageModule = images[imagePath];
+---
+
+{imageModule && (
+  <div class="section-hero" style={`height: ${heroHeight}`}>
+    <Image src={imageModule()} alt={alt} width={1200} style={`object-position: ${heroPosition}`} />
+  </div>
+)}

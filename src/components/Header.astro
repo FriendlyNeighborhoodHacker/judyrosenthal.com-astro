@@ -1,0 +1,42 @@
+---
+import { menu } from '../data/menu';
+
+interface Props {
+  isHome?: boolean;
+}
+
+const { isHome = false } = Astro.props;
+---
+
+<header class="site-header">
+  <a href="/" class="site-title">Judy Rosenthal</a>
+  <nav>
+    <button class="nav-toggle" id="nav-toggle" aria-label="Toggle navigation">&#9776;</button>
+    <ul class="nav-menu" id="nav-menu">
+      {menu.map((item) => (
+        <li class={item.children ? 'has-children' : ''}>
+          <a href={item.url}>{item.name}</a>
+          {item.children && (
+            <ul class="submenu">
+              {item.children.map((child) => (
+                <li><a href={child.url}>{child.name}</a></li>
+              ))}
+            </ul>
+          )}
+        </li>
+      ))}
+    </ul>
+  </nav>
+</header>
+
+<script>
+  /* Mobile nav toggle */
+  const toggle = document.getElementById('nav-toggle');
+  const navMenu = document.getElementById('nav-menu');
+  
+  if (toggle && navMenu) {
+    toggle.addEventListener('click', () => {
+      navMenu.classList.toggle('open');
+    });
+  }
+</script>

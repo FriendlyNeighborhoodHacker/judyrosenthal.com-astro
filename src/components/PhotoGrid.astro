@@ -1,0 +1,42 @@
+---
+import { Image } from 'astro:assets';
+
+interface Props {
+  albumDir: string;
+  descriptions?: Record<string, string>;
+}
+
+const { albumDir, descriptions = {} } = Astro.props;
+
+// Import all images from the album directory
+const images = import.meta.glob<{ default: ImageMetadata }>('/src/assets/images/**/*.{jpeg,jpg,png,gif}');
+
+// Filter images that match the album directory (exact directory, not just substring)
+const normalizedDir = `/src/assets/images/${albumDir.replace(/^\/+|\/+$/g, '')}/`;
+const albumImages = Object.entries(images)
+  .filter(([path]) => path.startsWith(normalizedDir))
+  .sort(([a], [b]) => a.localeCompare(b)); // Sort alphabetically by filename
+---
+
+{albumImages.length > 0 && (
+  <div class="photo-grid" id="photo-grid">
+    {albumImages.map(async ([path, imageModule]) => {
+      const image = await imageModule();
+      const filename = path.split('/').pop() || '';
+      const description = descriptions[filename] || '';
+      
+      return (
+        <div class="photo-grid-item" data-filename={filename} data-desc={description}>
+          <Image
+            src={image.default}
+            alt={description || filename}
+            widths={[350, 1200]}
+            sizes="(max-width: 768px) 50vw, 350px"
+            format="webp"
+            loading="lazy"
+          />
+        </div>
+      );
+    })}
+  </div>
+)}

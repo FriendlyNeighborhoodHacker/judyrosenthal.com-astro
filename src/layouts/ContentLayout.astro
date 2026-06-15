@@ -1,0 +1,45 @@
+---
+import BaseLayout from './BaseLayout.astro';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import Breadcrumbs from '../components/Breadcrumbs.astro';
+import SectionHero from '../components/SectionHero.astro';
+
+interface Props {
+  frontmatter?: {
+    title?: string;
+    hero?: string;
+    heroHeight?: string;
+    heroPosition?: string;
+    albumDir?: string;
+  };
+  title?: string;
+  showBreadcrumbs?: boolean;
+}
+
+const { frontmatter, showBreadcrumbs = true } = Astro.props;
+const title = frontmatter?.title ?? Astro.props.title ?? '';
+const hero = frontmatter?.hero;
+const heroHeight = frontmatter?.heroHeight ?? '250px';
+const heroPosition = frontmatter?.heroPosition ?? 'center';
+const albumDir = frontmatter?.albumDir;
+const pageTitle = `${title} | Judy Rosenthal`;
+---
+
+<BaseLayout title={pageTitle} bodyClass="page-content">
+  <Header />
+  <hr class="content-rule" />
+  <main class="content-body">
+    {hero && <SectionHero hero={hero} heroHeight={heroHeight} heroPosition={heroPosition} alt={title} />}
+    {showBreadcrumbs && <Breadcrumbs pathname={Astro.url.pathname} />}
+    <slot />
+  </main>
+  <Footer />
+  
+  {import.meta.env.DEV && (
+    <div class="dev-tools">
+      <a href={`/edit?page=${Astro.url.pathname}`}>✏️ Edit Content</a>
+      {albumDir && <a href={`/manage-photos?album=${albumDir}&page=${Astro.url.pathname}`}>📸 Manage Photos</a>}
+    </div>
+  )}
+</BaseLayout>

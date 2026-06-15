@@ -1,0 +1,40 @@
+---
+interface Props {
+  pathname: string;
+}
+
+const { pathname } = Astro.props;
+
+// Parse pathname to create breadcrumb trail
+const parts = pathname.split('/').filter(Boolean);
+
+// Create breadcrumb items (always lead with Home)
+const breadcrumbs = [
+  { url: '/', label: 'Home', isLast: parts.length === 0 },
+  ...parts.map((part, index) => {
+    const url = '/' + parts.slice(0, index + 1).join('/') + '/';
+    const label = part
+      .split('-')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
+    return { url, label, isLast: index === parts.length - 1 };
+  }),
+];
+---
+
+{breadcrumbs.length > 1 && (
+  <div class="breadcrumbs">
+    {breadcrumbs.map((crumb, index) => (
+      <>
+        {!crumb.isLast ? (
+          <>
+            <a href={crumb.url}>{crumb.label}</a>
+            <span> &rsaquo; </span>
+          </>
+        ) : (
+          <span>{crumb.label}</span>
+        )}
+      </>
+    ))}
+  </div>
+)}
