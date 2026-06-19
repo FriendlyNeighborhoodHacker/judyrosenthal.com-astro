@@ -10,13 +10,13 @@ export interface Slide {
 
 export const slides: Slide[] = [
   {
-    image: "images/homepage/01_Portrait-JudithAnn Saksjpg.jpg",
+    image: "images/homepage/judy_rosenthal_site_cover_photo.png",
     title: "Biography",
     link: "/biography/",
-    menuColor: "black",
+    menuColor: "white",
     wideMode: "contain",
-    sideColor: "#ffffea",
-    shadowColor: "rgba(255,255,255,0.75)"
+    sideColor: "#76A7C0",
+    shadowColor: "rgba(0, 0, 0, 0.75)"
   },
   {
     image: "images/homepage/02_The_Laura_full.jpg",
