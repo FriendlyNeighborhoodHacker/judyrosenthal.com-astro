@@ -31,15 +31,15 @@ export const slides: Slide[] = [
     title: "Art",
     link: "/art",
     menuColor: "black",
-    sideColor: "#e9e4d8"
+    sideColor: "#F1F3EE"
 
 },
   {
     image: "images/homepage/03_Courthouse Notecard_cropped.png",
     title: "Art > Houston",
     link: "/art/houston/",
-    menuColor: "black",
-    sideColor: "#e9e4d8"
+    menuColor: "white",
+    sideColor: "#271F02"
   },
   {
     image: "images/homepage/04_brown_landscape_full.jpg",
@@ -62,14 +62,14 @@ export const slides: Slide[] = [
     title: "Art > Seascapes",
     link: "/art/seascapes/",
     menuColor: "white",
-    sideColor: "#3a5a6b"
+    sideColor: "#3D449C"
   },
   {
     image: "images/homepage/06B_Picnic_full.jpg",
     title: "Art > Landscapes",
     link: "/art/landscapes/",
     menuColor: "black",
-    sideColor: "#8a9a6b"
+    sideColor: "#378994"
   },
 
   {
