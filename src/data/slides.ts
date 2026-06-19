@@ -26,18 +26,29 @@ export const slides: Slide[] = [
     wideMode: "contain",
     sideColor: "#488cb1"
   },
+{
+    image: "images/homepage/07_Pegasus_full.jpg",
+    title: "Art",
+    link: "/art",
+    menuColor: "black",
+    sideColor: "#e9e4d8"
+
+},
   {
     image: "images/homepage/03_Courthouse Notecard_cropped.png",
     title: "Art > Houston",
     link: "/art/houston/",
-    menuColor: "black"
+    menuColor: "black",
+    sideColor: "#e9e4d8"
   },
   {
     image: "images/homepage/04_brown_landscape_full.jpg",
     title: "Art > Cubistic Extensionism",
     link: "/art/cubistic-extensionism/",
-    menuColor: "white"
+    menuColor: "white",
+    sideColor: "#6b5436"
   },
+
   {
     image: "images/homepage/05_Liberty.jpg",
     title: "Art > Heritage",
@@ -50,14 +61,17 @@ export const slides: Slide[] = [
     image: "images/homepage/06_The_Southwind_full.png",
     title: "Art > Seascapes",
     link: "/art/seascapes/",
-    menuColor: "white"
+    menuColor: "white",
+    sideColor: "#3a5a6b"
   },
   {
     image: "images/homepage/06B_Picnic_full.jpg",
     title: "Art > Landscapes",
     link: "/art/landscapes/",
-    menuColor: "black"
+    menuColor: "black",
+    sideColor: "#8a9a6b"
   },
+
   {
     image: "images/homepage/08_family_homepage.jpeg",
     title: "Family",

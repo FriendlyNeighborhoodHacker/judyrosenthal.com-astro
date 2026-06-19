@@ -302,7 +302,17 @@ a {
     background-position: center center;
     background-repeat: no-repeat;
   }
+
+  /* Cover mode: on wide screens, fit the full image height so the bottom is
+     never cropped. The image is scaled to the viewport height and the sides
+     are letterboxed with the slide's background-color (from sideColor). */
+  .slide[data-wide-mode="cover"] {
+    background-size: auto 100%;
+    background-position: center center;
+    background-repeat: no-repeat;
+  }
 }
+
 
 /* ----- Prev / Next arrows ----- */
 .slide-arrow {
