@@ -11,15 +11,6 @@ export interface ArtSlide {
 
 export const artSlides: ArtSlide[] = [
   {
-    collection: "abstract_expressionism",
-    title: "Abstract Expressionism",
-    link: "/art/abstract-expressionism/",
-    landscape: "images/art/art_abstract_expressionism_landscape.png",
-    portrait: "images/art/art_abstract_expressionism_portrait.png",
-    menuColor: "white",
-    shadowColor: "rgba(0,0,0,0.75)"
-  },
-  {
     collection: "bicentennial",
     title: "Bicentennial Project",
     link: "/art/bicentennial-project/",
@@ -61,6 +52,15 @@ export const artSlides: ArtSlide[] = [
     link: "/art/seascapes/",
     landscape: "images/art/art_seascapes_landscape.png",
     portrait: "images/art/art_seascapes_portrait.png",
+    menuColor: "white",
+    shadowColor: "rgba(0,0,0,0.75)"
+  },
+  {
+    collection: "abstract_expressionism",
+    title: "Abstract Expressionism",
+    link: "/art/abstract-expressionism/",
+    landscape: "images/art/art_abstract_expressionism_landscape.png",
+    portrait: "images/art/art_abstract_expressionism_portrait.png",
     menuColor: "white",
     shadowColor: "rgba(0,0,0,0.75)"
   }
