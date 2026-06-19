@@ -314,8 +314,67 @@ a {
 }
 
 
+/* ----- Art slideshow: landscape/portrait background swap ----- */
+.art-slide {
+  background-image: var(--bg-landscape);
+  background-size: auto 100%;
+  background-position: center center;
+  background-repeat: no-repeat;
+}
+
+/* Below 1000px, fill-and-crop (like default cover slides) */
+@media (max-width: 999px) {
+  .art-slide {
+    background-size: cover;
+    background-position: center top;
+  }
+}
+
+/* On mobile, use the portrait version of each image */
+@media (max-width: 768px) {
+  .art-slide {
+    background-image: var(--bg-portrait);
+  }
+}
+
+/* ----- Breadcrumbs overlay on the art slideshow (bottom-left) ----- */
+.slide-breadcrumbs {
+  position: absolute;
+  bottom: 40px;
+  left: 32px;
+  z-index: 40;
+  pointer-events: auto;
+}
+
+.slide-breadcrumbs .breadcrumbs {
+  margin-bottom: 0;
+}
+
+/* Breadcrumb color follows the per-slide menu color */
+.page-home.menu-white .slide-breadcrumbs .breadcrumbs,
+.page-home.menu-white .slide-breadcrumbs .breadcrumbs a,
+.page-home.menu-white .slide-breadcrumbs .breadcrumbs span {
+  color: white;
+}
+
+.page-home.menu-black .slide-breadcrumbs .breadcrumbs,
+.page-home.menu-black .slide-breadcrumbs .breadcrumbs a,
+.page-home.menu-black .slide-breadcrumbs .breadcrumbs span {
+  color: black;
+}
+
+@media (max-width: 800px) {
+  .slide-breadcrumbs {
+    left: calc(400px - 50vw); /* counteract the slideshow centering shift */
+    width: 100vw;
+    bottom: 16px;
+    padding: 0 20px;
+  }
+}
+
 /* ----- Prev / Next arrows ----- */
 .slide-arrow {
+
   position: absolute;
   top: 50%;
   transform: translateY(-50%);

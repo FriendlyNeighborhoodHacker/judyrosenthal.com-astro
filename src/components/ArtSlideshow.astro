@@ -1,0 +1,252 @@
+---
+import { artSlides } from '../data/artSlides';
+import Breadcrumbs from './Breadcrumbs.astro';
+import { getImage } from 'astro:assets';
+
+// Import all art images and resolve their optimized URLs
+const images = import.meta.glob<{ default: ImageMetadata }>('/src/assets/images/art/*.*');
+
+async function resolve(path: string): Promise<string> {
+  const full = `/src/assets/${path}`;
+  const mod = images[full];
+  if (!mod) return full;
+  const imported = await mod();
+  const optimized = await getImage({ src: imported.default, width: 1920, format: 'webp' });
+  return optimized.src;
+}
+
+const resolvedSlides = await Promise.all(
+  artSlides.map(async (slide) => {
+    const [landscapeUrl, portraitUrl] = await Promise.all([
+      resolve(slide.landscape),
+      resolve(slide.portrait),
+    ]);
+    return { ...slide, landscapeUrl, portraitUrl };
+  })
+);
+---
+
+<div class="slideshow-wrapper">
+  <div class="slideshow" id="art-slideshow">
+    {resolvedSlides.map((slide, index) => (
+      <div
+        class={`slide art-slide${index === 0 ? ' active' : ''}`}
+        data-link={slide.link}
+        data-menu-color={slide.menuColor}
+        data-shadow-color={slide.shadowColor || ''}
+        style={`--bg-landscape: url('${slide.landscapeUrl}'); --bg-portrait: url('${slide.portraitUrl}'); background-color: ${slide.sideColor || '#000'}`}
+      />
+    ))}
+
+    <div class="slide-breadcrumbs">
+      <Breadcrumbs pathname="/art/" />
+    </div>
+
+    <button class="slide-arrow prev" id="art-slide-prev" aria-label="Previous">&lt;</button>
+    <button class="slide-arrow next" id="art-slide-next" aria-label="Next">&gt;</button>
+  </div>
+</div>
+
+<script>
+  (function () {
+    const slides = document.querySelectorAll('#art-slideshow .slide');
+    const prevBtn = document.getElementById('art-slide-prev');
+    const nextBtn = document.getElementById('art-slide-next');
+    const showEl = document.getElementById('art-slideshow');
+    if (!slides.length) return;
+
+    let current = 0;
+    let timer: ReturnType<typeof setInterval>;
+    let isAnimating = false;
+
+    let wasDrag = false;
+
+    /* Menu color + nav text shadow */
+    function updateMenuColor() {
+      const color = (slides[current] as HTMLElement).dataset.menuColor || 'white';
+      document.body.classList.remove('menu-white', 'menu-black');
+      document.body.classList.add('menu-' + color);
+
+      const shadowColor = (slides[current] as HTMLElement).dataset.shadowColor || '';
+      const glow = shadowColor
+        ? `0 0 10px ${shadowColor}, 0 0 20px ${shadowColor}, 0 0 40px ${shadowColor}, 0 0 80px ${shadowColor}`
+        : '';
+
+      const siteTitle = document.querySelector('.site-title') as HTMLElement;
+      if (siteTitle) { siteTitle.style.textShadow = glow; }
+
+      const navLinks = document.querySelectorAll('.nav-menu > li > a');
+      navLinks.forEach((link) => {
+        (link as HTMLElement).style.textShadow = glow;
+      });
+
+      const crumbs = document.querySelectorAll('.slide-breadcrumbs .breadcrumbs, .slide-breadcrumbs .breadcrumbs a, .slide-breadcrumbs .breadcrumbs span');
+      crumbs.forEach((c) => {
+        (c as HTMLElement).style.textShadow = glow;
+      });
+    }
+
+    /* Auto-advance timer */
+    function startTimer() {
+      clearInterval(timer);
+      timer = setInterval(() => { activateOpacity(current + 1); }, 5000);
+    }
+
+    /* Opacity-based activation */
+    function activateOpacity(n: number) {
+      if (isAnimating) return;
+      slides[current].classList.remove('active');
+      current = ((n % slides.length) + slides.length) % slides.length;
+      slides[current].classList.add('active');
+      updateMenuColor();
+    }
+
+    /* Arrow buttons */
+    prevBtn?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      activateOpacity(current - 1);
+      startTimer();
+    });
+    nextBtn?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      activateOpacity(current + 1);
+      startTimer();
+    });
+
+    /* Click to navigate */
+    slides.forEach((slide) => {
+      slide.addEventListener('click', function (this: HTMLElement) {
+        if (!wasDrag) {
+          const link = this.dataset.link;
+          if (link) window.location.href = link;
+        }
+      });
+    });
+
+    /* Touch handling for swipe */
+    let touchStartX = 0;
+    let touchStartY = 0;
+    let isDragging = false;
+    let adjIdx = -1;
+
+    function cleanupDrag() {
+      adjIdx = -1;
+      slides.forEach((slide) => {
+        const el = slide as HTMLElement;
+        el.style.transition = 'none';
+        el.style.transform = '';
+        el.style.opacity = slide.classList.contains('active') ? '1' : '0';
+      });
+      requestAnimationFrame(() => {
+        slides.forEach((slide) => {
+          const el = slide as HTMLElement;
+          el.style.transition = '';
+          el.style.opacity = '';
+        });
+      });
+    }
+
+    function commitToSlide(newIdx: number) {
+      slides[current].classList.remove('active');
+      current = newIdx;
+      slides[current].classList.add('active');
+      updateMenuColor();
+      cleanupDrag();
+      isAnimating = false;
+    }
+
+    showEl?.addEventListener('touchstart', (e) => {
+      if ((e.target as HTMLElement).closest('.slide-arrow')) return;
+      if (e.changedTouches.length !== 1 || isAnimating) return;
+      touchStartX = e.changedTouches[0].screenX;
+      touchStartY = e.changedTouches[0].screenY;
+      isDragging = false;
+      wasDrag = false;
+      adjIdx = -1;
+    }, { passive: true });
+
+    showEl?.addEventListener('touchmove', (e) => {
+      if (e.changedTouches.length !== 1 || isAnimating) return;
+      const dx = e.changedTouches[0].screenX - touchStartX;
+      const dy = e.changedTouches[0].screenY - touchStartY;
+
+      if (!isDragging) {
+        if (Math.abs(dx) < 8) return;
+        if (Math.abs(dy) > Math.abs(dx)) return;
+        isDragging = true;
+        wasDrag = true;
+
+        const w = showEl.offsetWidth;
+        adjIdx = dx < 0
+          ? (current + 1) % slides.length
+          : (current - 1 + slides.length) % slides.length;
+
+        (slides[current] as HTMLElement).style.transition = 'none';
+        (slides[adjIdx] as HTMLElement).style.transition = 'none';
+        (slides[adjIdx] as HTMLElement).style.opacity = '1';
+        (slides[adjIdx] as HTMLElement).style.transform = dx < 0
+          ? `translateX(${w}px)`
+          : `translateX(-${w}px)`;
+      }
+
+      const w = showEl.offsetWidth;
+      (slides[current] as HTMLElement).style.transform = `translateX(${dx}px)`;
+      (slides[adjIdx] as HTMLElement).style.transform = dx < 0
+        ? `translateX(${w + dx}px)`
+        : `translateX(${-w + dx}px)`;
+    }, { passive: true });
+
+    showEl?.addEventListener('touchend', (e) => {
+      if (e.changedTouches.length !== 1) return;
+      if (!isDragging) return;
+
+      const dx = e.changedTouches[0].screenX - touchStartX;
+      const w = showEl.offsetWidth;
+      const fromIdx = current;
+      const toIdx = adjIdx;
+      const SNAP = 'transform 0.3s ease';
+      const BACK = 'transform 0.2s ease';
+      const isToNext = toIdx === (fromIdx + 1) % slides.length;
+
+      isAnimating = true;
+
+      if (Math.abs(dx) > 50 && toIdx >= 0) {
+        /* Commit swipe */
+        (slides[fromIdx] as HTMLElement).style.transition = SNAP;
+        (slides[toIdx] as HTMLElement).style.transition = SNAP;
+        (slides[fromIdx] as HTMLElement).style.transform = isToNext
+          ? `translateX(-${w}px)`
+          : `translateX(${w}px)`;
+        (slides[toIdx] as HTMLElement).style.transform = 'translateX(0)';
+
+        slides[toIdx].addEventListener('transitionend', function onEnd(ev) {
+          if ((ev as TransitionEvent).propertyName !== 'transform') return;
+          slides[toIdx].removeEventListener('transitionend', onEnd as EventListener);
+          commitToSlide(toIdx);
+        });
+        startTimer();
+      } else {
+        /* Snap back */
+        (slides[fromIdx] as HTMLElement).style.transition = BACK;
+        (slides[fromIdx] as HTMLElement).style.transform = 'translateX(0)';
+        if (toIdx >= 0) {
+          (slides[toIdx] as HTMLElement).style.transition = BACK;
+          (slides[toIdx] as HTMLElement).style.transform = isToNext
+            ? `translateX(${w}px)`
+            : `translateX(-${w}px)`;
+        }
+
+        slides[fromIdx].addEventListener('transitionend', function onEnd(ev) {
+          if ((ev as TransitionEvent).propertyName !== 'transform') return;
+          slides[fromIdx].removeEventListener('transitionend', onEnd as EventListener);
+          cleanupDrag();
+          isAnimating = false;
+        });
+      }
+    }, { passive: true });
+
+    /* Init */
+    updateMenuColor();
+    startTimer();
+  })();
+</script>
