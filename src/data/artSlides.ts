@@ -29,20 +29,20 @@ export const artSlides: ArtSlide[] = [
     shadowColor: "rgba(0,0,0,0.75)"
   },
   {
-    collection: "landscapes",
-    title: "Landscapes",
-    link: "/art/landscapes/",
-    landscape: "images/art/art_landscapes_landscape.png",
-    portrait: "images/art/art_landscapes_portrait.png",
-    menuColor: "white",
-    shadowColor: "rgba(0,0,0,0.75)"
-  },
-  {
     collection: "patriotic",
     title: "Patriotic",
     link: "/art/patriotic/",
     landscape: "images/art/art_patriotic_landscape.png",
     portrait: "images/art/art_patriotic_portrait.png",
+    menuColor: "white",
+    shadowColor: "rgba(0,0,0,0.75)"
+  },
+    {
+    collection: "landscapes",
+    title: "Landscapes",
+    link: "/art/landscapes/",
+    landscape: "images/art/art_landscapes_landscape.png",
+    portrait: "images/art/art_landscapes_portrait.png",
     menuColor: "white",
     shadowColor: "rgba(0,0,0,0.75)"
   },
