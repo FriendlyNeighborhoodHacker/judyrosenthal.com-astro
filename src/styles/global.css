@@ -229,17 +229,18 @@ a {
 .slideshow {
   position: relative;
   width: 100%;
-  min-width: 800px;
+  min-width: 0;
   height: 100vh;
 }
 
-/* On narrow viewports: fix the width at 800 px and center it */
+/* On narrow viewports: full-width, aligned to the viewport edge */
 @media (max-width: 800px) {
   .slideshow {
-    width: 800px;
-    left: calc(50vw - 400px);
+    width: 100%;
+    left: 0;
   }
 }
+
 
 /* ----- Individual slides ----- */
 .slide {
@@ -287,13 +288,14 @@ a {
 /* On narrow viewports: full-viewport-width bar flush to the bottom */
 @media (max-width: 800px) {
   .slide-title {
-    left: calc(400px - 50vw); /* counteract the slideshow centering shift */
+    left: 0;
     width: 100vw;
     bottom: 0;
     font-size: 0.75rem;
     padding: 16px 20px;
   }
 }
+
 
 /* ----- Wide-mode: contain (portrait images on large screens) ----- */
 @media (min-width: 1000px) {
@@ -365,12 +367,13 @@ a {
 
 @media (max-width: 800px) {
   .slide-breadcrumbs {
-    left: calc(400px - 50vw); /* counteract the slideshow centering shift */
+    left: 0;
     width: 100vw;
     bottom: 16px;
     padding: 0 20px;
   }
 }
+
 
 /* ----- Prev / Next arrows ----- */
 .slide-arrow {
