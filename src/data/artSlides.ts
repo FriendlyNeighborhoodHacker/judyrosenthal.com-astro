@@ -10,6 +10,15 @@ export interface ArtSlide {
 }
 
 export const artSlides: ArtSlide[] = [
+      {
+    collection: "landscapes",
+    title: "Landscapes",
+    link: "/art/landscapes/",
+    landscape: "images/art/art_landscapes_landscape.png",
+    portrait: "images/art/art_landscapes_portrait.png",
+    menuColor: "white",
+    shadowColor: "rgba(0,0,0,0.75)"
+  },
   {
     collection: "bicentennial",
     title: "Bicentennial Project",
@@ -37,15 +46,7 @@ export const artSlides: ArtSlide[] = [
     menuColor: "white",
     shadowColor: "rgba(0,0,0,0.75)"
   },
-    {
-    collection: "landscapes",
-    title: "Landscapes",
-    link: "/art/landscapes/",
-    landscape: "images/art/art_landscapes_landscape.png",
-    portrait: "images/art/art_landscapes_portrait.png",
-    menuColor: "white",
-    shadowColor: "rgba(0,0,0,0.75)"
-  },
+
   {
     collection: "seascapes",
     title: "Seascapes",
