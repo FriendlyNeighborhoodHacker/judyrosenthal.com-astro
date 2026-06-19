@@ -1,6 +1,5 @@
 ---
 import { artSlides } from '../data/artSlides';
-import Breadcrumbs from './Breadcrumbs.astro';
 import { getImage } from 'astro:assets';
 
 // Import all art images and resolve their optimized URLs
@@ -32,6 +31,7 @@ const resolvedSlides = await Promise.all(
       <div
         class={`slide art-slide${index === 0 ? ' active' : ''}`}
         data-link={slide.link}
+        data-title={slide.title}
         data-menu-color={slide.menuColor}
         data-shadow-color={slide.shadowColor || ''}
         style={`--bg-landscape: url('${slide.landscapeUrl}'); --bg-portrait: url('${slide.portraitUrl}'); background-color: ${slide.sideColor || '#000'}`}
@@ -39,8 +39,15 @@ const resolvedSlides = await Promise.all(
     ))}
 
     <div class="slide-breadcrumbs">
-      <Breadcrumbs pathname="/art/" />
+      <div class="breadcrumbs">
+        <a href="/">Home</a>
+        <span> &rsaquo; </span>
+        <a href="/art/">Art</a>
+        <span> &rsaquo; </span>
+        <span id="art-crumb-title">{resolvedSlides[0]?.title}</span>
+      </div>
     </div>
+
 
     <button class="slide-arrow prev" id="art-slide-prev" aria-label="Previous">&lt;</button>
     <button class="slide-arrow next" id="art-slide-next" aria-label="Next">&gt;</button>
@@ -62,6 +69,14 @@ const resolvedSlides = await Promise.all(
     let wasDrag = false;
 
     /* Menu color + nav text shadow */
+    const crumbTitleEl = document.getElementById('art-crumb-title');
+
+    function updateBreadcrumb() {
+      if (!crumbTitleEl) return;
+      const title = (slides[current] as HTMLElement).dataset.title || '';
+      crumbTitleEl.textContent = title;
+    }
+
     function updateMenuColor() {
       const color = (slides[current] as HTMLElement).dataset.menuColor || 'white';
       document.body.classList.remove('menu-white', 'menu-black');
@@ -84,6 +99,8 @@ const resolvedSlides = await Promise.all(
       crumbs.forEach((c) => {
         (c as HTMLElement).style.textShadow = glow;
       });
+
+      updateBreadcrumb();
     }
 
     /* Auto-advance timer */
@@ -111,6 +128,17 @@ const resolvedSlides = await Promise.all(
       e.stopPropagation();
       activateOpacity(current + 1);
       startTimer();
+    });
+
+    /* Physical keyboard arrows: change slide + reset timer */
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowLeft') {
+        activateOpacity(current - 1);
+        startTimer();
+      } else if (e.key === 'ArrowRight') {
+        activateOpacity(current + 1);
+        startTimer();
+      }
     });
 
     /* Click to navigate */
@@ -163,6 +191,8 @@ const resolvedSlides = await Promise.all(
       isDragging = false;
       wasDrag = false;
       adjIdx = -1;
+      /* Pause auto-advance while a finger is on the screen */
+      clearInterval(timer);
     }, { passive: true });
 
     showEl?.addEventListener('touchmove', (e) => {
@@ -196,9 +226,18 @@ const resolvedSlides = await Promise.all(
         : `translateX(${-w + dx}px)`;
     }, { passive: true });
 
+    showEl?.addEventListener('touchcancel', () => {
+      /* Finger lifted/cancelled without a drag: restart the countdown */
+      if (!isDragging && !isAnimating) startTimer();
+    }, { passive: true });
+
     showEl?.addEventListener('touchend', (e) => {
       if (e.changedTouches.length !== 1) return;
-      if (!isDragging) return;
+      if (!isDragging) {
+        /* A tap/hold with no drag: resume the timer from release */
+        if (!isAnimating) startTimer();
+        return;
+      }
 
       const dx = e.changedTouches[0].screenX - touchStartX;
       const w = showEl.offsetWidth;
@@ -223,8 +262,8 @@ const resolvedSlides = await Promise.all(
           if ((ev as TransitionEvent).propertyName !== 'transform') return;
           slides[toIdx].removeEventListener('transitionend', onEnd as EventListener);
           commitToSlide(toIdx);
+          startTimer();
         });
-        startTimer();
       } else {
         /* Snap back */
         (slides[fromIdx] as HTMLElement).style.transition = BACK;
@@ -241,6 +280,7 @@ const resolvedSlides = await Promise.all(
           slides[fromIdx].removeEventListener('transitionend', onEnd as EventListener);
           cleanupDrag();
           isAnimating = false;
+          startTimer();
         });
       }
     }, { passive: true });

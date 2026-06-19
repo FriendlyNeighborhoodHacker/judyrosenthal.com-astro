@@ -100,7 +100,19 @@ const resolvedSlides = await Promise.all(
       startTimer();
     });
 
+    /* Physical keyboard arrows: change slide + reset timer */
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowLeft') {
+        activateOpacity(current - 1);
+        startTimer();
+      } else if (e.key === 'ArrowRight') {
+        activateOpacity(current + 1);
+        startTimer();
+      }
+    });
+
     /* Click to navigate */
+
     slides.forEach((slide) => {
       slide.addEventListener('click', function (this: HTMLElement) {
         if (!wasDrag) {
@@ -150,7 +162,10 @@ const resolvedSlides = await Promise.all(
       isDragging = false;
       wasDrag = false;
       adjIdx = -1;
+      /* Pause auto-advance while a finger is on the screen */
+      clearInterval(timer);
     }, { passive: true });
+
 
     showEl?.addEventListener('touchmove', (e) => {
       if (e.changedTouches.length !== 1 || isAnimating) return;
@@ -183,11 +198,21 @@ const resolvedSlides = await Promise.all(
         : `translateX(${-w + dx}px)`;
     }, { passive: true });
 
+    showEl?.addEventListener('touchcancel', () => {
+      /* Finger lifted/cancelled without a drag: restart the countdown */
+      if (!isDragging && !isAnimating) startTimer();
+    }, { passive: true });
+
     showEl?.addEventListener('touchend', (e) => {
       if (e.changedTouches.length !== 1) return;
-      if (!isDragging) return;
+      if (!isDragging) {
+        /* A tap/hold with no drag: resume the timer from release */
+        if (!isAnimating) startTimer();
+        return;
+      }
 
       const dx = e.changedTouches[0].screenX - touchStartX;
+
       const w = showEl.offsetWidth;
       const fromIdx = current;
       const toIdx = adjIdx;
@@ -210,9 +235,10 @@ const resolvedSlides = await Promise.all(
           if ((ev as TransitionEvent).propertyName !== 'transform') return;
           slides[toIdx].removeEventListener('transitionend', onEnd as EventListener);
           commitToSlide(toIdx);
+          startTimer();
         });
-        startTimer();
       } else {
+
         /* Snap back */
         (slides[fromIdx] as HTMLElement).style.transition = BACK;
         (slides[fromIdx] as HTMLElement).style.transform = 'translateX(0)';
@@ -228,9 +254,11 @@ const resolvedSlides = await Promise.all(
           slides[fromIdx].removeEventListener('transitionend', onEnd as EventListener);
           cleanupDrag();
           isAnimating = false;
+          startTimer();
         });
       }
     }, { passive: true });
+
 
     /* Init */
     updateMenuColor();
