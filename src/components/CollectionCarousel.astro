@@ -99,16 +99,45 @@ const items = collectionImages
     const prevBtn = wrapper.querySelector('.collection-arrow.prev') as HTMLElement | null;
     const nextBtn = wrapper.querySelector('.collection-arrow.next') as HTMLElement | null;
 
-    /* Distance to scroll per arrow click: roughly one painting's width. */
-    function stepSize(): number {
-      const first = track.querySelector('.collection-item') as HTMLElement | null;
-      if (first) {
-        const styles = getComputedStyle(track);
-        const gap = parseFloat(styles.columnGap || styles.gap || '0') || 0;
-        return first.getBoundingClientRect().width + gap;
-      }
-      return track.clientWidth * 0.8;
+    /* The track's own left padding — painting offsetLefts include it, but
+       scrollLeft starts at 0, so we subtract it to get true scroll targets. */
+    function trackPadLeft(): number {
+      return parseFloat(getComputedStyle(track).paddingLeft || '0') || 0;
     }
+
+    /* Scroll-target left position for each painting: its offsetLeft minus the
+       track's left padding, so the painting's left edge lands at the container
+       edge (and is therefore fully visible). */
+    function itemTargets(): number[] {
+      const pad = trackPadLeft();
+      const items = Array.from(
+        track.querySelectorAll('.collection-item')
+      ) as HTMLElement[];
+      return items.map((el) => Math.max(0, el.offsetLeft - pad));
+    }
+
+    /* Snap to the next painting (precise, regardless of width). */
+    function nextOffset(): number {
+      const targets = itemTargets();
+      const cur = track.scrollLeft;
+      for (const t of targets) {
+        if (t > cur + 4) return t;
+      }
+      return targets.length ? targets[targets.length - 1] : cur;
+    }
+
+    /* Snap to the previous painting. */
+    function prevOffset(): number {
+      const targets = itemTargets();
+      const cur = track.scrollLeft;
+      let target = 0;
+      for (const t of targets) {
+        if (t < cur - 4) target = t;
+        else break;
+      }
+      return target;
+    }
+
 
     function atEnd(): boolean {
       return track.scrollLeft + track.clientWidth >= track.scrollWidth - 2;
@@ -117,6 +146,7 @@ const items = collectionImages
     function atStart(): boolean {
       return track.scrollLeft <= 2;
     }
+
 
     /* When at the far end, the next arrow "flips" to point back to the start;
        symmetrically the prev arrow flips at the start. */
@@ -133,7 +163,7 @@ const items = collectionImages
       if (atEnd()) {
         track.scrollTo({ left: 0, behavior: 'smooth' });
       } else {
-        track.scrollBy({ left: stepSize(), behavior: 'smooth' });
+        track.scrollTo({ left: nextOffset(), behavior: 'smooth' });
       }
     });
 
@@ -141,9 +171,10 @@ const items = collectionImages
       if (atStart()) {
         track.scrollTo({ left: track.scrollWidth, behavior: 'smooth' });
       } else {
-        track.scrollBy({ left: -stepSize(), behavior: 'smooth' });
+        track.scrollTo({ left: prevOffset(), behavior: 'smooth' });
       }
     });
+
 
     track.addEventListener('scroll', updateArrows, { passive: true });
     window.addEventListener('resize', updateArrows);

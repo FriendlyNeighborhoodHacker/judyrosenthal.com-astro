@@ -1,6 +1,22 @@
 ---
 title: "Heritage"
 layout: ../../layouts/ContentLayout.astro
+collection: true
 ---
 
+import CollectionCarousel from '../../components/CollectionCarousel.astro';
+import Lightbox from '../../components/Lightbox.astro';
+
+<div class="collection-layout">
+
+<div class="collection-description">
+
 A collection of Judy Rosenthal's heritage paintings.
+
+</div>
+
+<CollectionCarousel collectionDir="art/collections/heritage" />
+
+</div>
+
+<Lightbox />
