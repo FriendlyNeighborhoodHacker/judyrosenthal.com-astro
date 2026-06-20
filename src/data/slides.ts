@@ -60,7 +60,7 @@ export const slides: Slide[] = [
     link: "/biography/",
     menuColor: "white",
     wideMode: "contain",
-    sideColor: "#76A7C0",
+    sideColor: "#000000",
     shadowColor: "rgba(0, 0, 0, 0.75)",
     titleBackground: "white",
     titleColor: "#222",
