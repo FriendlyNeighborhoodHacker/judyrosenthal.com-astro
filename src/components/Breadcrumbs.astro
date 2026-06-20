@@ -17,10 +17,10 @@ const breadcrumbs = parts.map((part, index) => {
     .join(' ');
   return { url, label, isLast: index === parts.length - 1 };
 });
-
-
+---
 
 {breadcrumbs.length > 1 && (
+
   <div class="breadcrumbs">
     {breadcrumbs.map((crumb, index) => (
       <>
