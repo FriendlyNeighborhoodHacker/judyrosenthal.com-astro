@@ -1,39 +1,94 @@
 ---
-import { slides } from '../data/slides';
+import type { Slide } from '../data/slides';
 import { getImage } from 'astro:assets';
 
-// Import all homepage images and resolve their optimized URLs
-const images = import.meta.glob<{ default: ImageMetadata }>('/src/assets/images/homepage/*.*');
+interface Props {
+  /** The slides to display. */
+  slides: Slide[];
+  /** Image sub-directory under src/assets/images (e.g. 'homepage' or 'art'). */
+  imageDir: string;
+}
+
+const { slides, imageDir } = Astro.props;
+
+// Glob every image so a single component can resolve whatever a slide uses
+// (single `image`, or dual `landscape`/`portrait`).
+const images = import.meta.glob<{ default: ImageMetadata }>('/src/assets/images/**/*.*');
+
+async function resolve(path?: string): Promise<string | undefined> {
+  if (!path) return undefined;
+  const full = `/src/assets/${path}`;
+  const mod = images[full];
+  if (!mod) return full;
+  const imported = await mod();
+  const optimized = await getImage({ src: imported.default, width: 1920, format: 'webp' });
+  return optimized.src;
+}
 
 const resolvedSlides = await Promise.all(
   slides.map(async (slide) => {
-    const path = `/src/assets/${slide.image}`;
-    const mod = images[path];
-    let url = path;
-    if (mod) {
-      const imported = await mod();
-      const optimized = await getImage({ src: imported.default, width: 1920, format: 'webp' });
-      url = optimized.src;
+    const [imageUrl, landscapeUrl, portraitUrl] = await Promise.all([
+      resolve(slide.image),
+      resolve(slide.landscape),
+      resolve(slide.portrait),
+    ]);
+    const dual = Boolean(slide.landscape || slide.portrait);
+    // Build a CSS inline style string for the slide background.
+    let style = `background-color: ${slide.sideColor || '#000'};`;
+    if (dual) {
+      style += ` --bg-landscape: url('${landscapeUrl}'); --bg-portrait: url('${portraitUrl || landscapeUrl}');`;
+    } else if (imageUrl) {
+      style += ` background-image: url('${imageUrl}');`;
     }
-    return { ...slide, url };
+    // Fallback crumbs from `title` if `crumbs` wasn't supplied.
+    const crumbs = slide.crumbs && slide.crumbs.length
+      ? slide.crumbs
+      : (slide.title ? [{ label: slide.title }] : []);
+    return { ...slide, dual, style, crumbs };
   })
 );
+
+// First slide drives the initial overlay render (so it's correct before JS runs).
+const first = resolvedSlides[0];
+function renderCrumbs(crumbs: { label: string; href?: string }[]) {
+  return crumbs;
+}
 ---
 
 <div class="slideshow-wrapper">
-  <div class="slideshow" id="slideshow">
+  <div class="slideshow" id="slideshow" data-image-dir={imageDir}>
     {resolvedSlides.map((slide, index) => (
       <div
-        class={`slide${index === 0 ? ' active' : ''}`}
+        class={`slide${slide.dual ? ' art-slide' : ''}${index === 0 ? ' active' : ''}`}
         data-link={slide.link}
         data-menu-color={slide.menuColor}
         data-wide-mode={slide.wideMode || 'cover'}
         data-shadow-color={slide.shadowColor || ''}
-        style={`background-image: url('${slide.url}'); background-color: ${slide.sideColor || '#000'}`}
-      >
-        <div class="slide-title">{slide.title}</div>
-      </div>
+        data-crumbs={JSON.stringify(slide.crumbs)}
+        data-title-bg={slide.titleBackground || ''}
+        data-title-color={slide.titleColor || ''}
+        data-title-style={slide.titleStyle || 'breadcrumb'}
+        style={slide.style}
+      />
     ))}
+
+    <div
+      class={`slide-breadcrumbs title-style-${first?.titleStyle || 'breadcrumb'}${first?.titleBackground ? ' boxed' : ''}`}
+      style={first?.titleBackground
+        ? `--title-bg: ${first.titleBackground}; --title-color: ${first.titleColor || '#fff'};`
+        : ''}
+    >
+      <div class="breadcrumbs">
+        {first && renderCrumbs(first.crumbs).map((crumb, i) => (
+          <>
+            {i > 0 && <span class="crumb-sep"> &rsaquo; </span>}
+            {crumb.href
+              ? <a href={crumb.href}>{crumb.label}</a>
+              : <span>{crumb.label}</span>}
+          </>
+        ))}
+      </div>
+    </div>
 
     <button class="slide-arrow prev" id="slide-prev" aria-label="Previous">&lt;</button>
     <button class="slide-arrow next" id="slide-next" aria-label="Next">&gt;</button>
@@ -42,24 +97,82 @@ const resolvedSlides = await Promise.all(
 
 <script>
   (function () {
-    const slides = document.querySelectorAll('.slide');
+    const showEl = document.getElementById('slideshow');
+    if (!showEl) return;
+    const slides = showEl.querySelectorAll('.slide');
     const prevBtn = document.getElementById('slide-prev');
     const nextBtn = document.getElementById('slide-next');
-    const showEl = document.getElementById('slideshow');
+    const overlay = showEl.querySelector('.slide-breadcrumbs') as HTMLElement | null;
+    const crumbsEl = overlay?.querySelector('.breadcrumbs') as HTMLElement | null;
     if (!slides.length) return;
 
     let current = 0;
-    let timer: number;
+    let timer: ReturnType<typeof setInterval>;
     let isAnimating = false;
     let wasDrag = false;
 
-    /* Menu color + nav text shadow */
+    type Crumb = { label: string; href?: string };
+
+    /* Rebuild the breadcrumb overlay from the active slide's crumbs, and apply
+       the per-slide boxed style (custom colors) when present. */
+    function updateBreadcrumb() {
+      const el = slides[current] as HTMLElement;
+      if (!overlay || !crumbsEl) return;
+
+      let crumbs: Crumb[] = [];
+      try {
+        crumbs = JSON.parse(el.dataset.crumbs || '[]');
+      } catch {
+        crumbs = [];
+      }
+
+      // Rebuild the inner trail.
+      crumbsEl.innerHTML = '';
+      crumbs.forEach((crumb, i) => {
+        if (i > 0) {
+          const sep = document.createElement('span');
+          sep.className = 'crumb-sep';
+          sep.innerHTML = ' &rsaquo; ';
+          crumbsEl.appendChild(sep);
+        }
+        if (crumb.href) {
+          const a = document.createElement('a');
+          a.href = crumb.href;
+          a.textContent = crumb.label;
+          crumbsEl.appendChild(a);
+        } else {
+          const span = document.createElement('span');
+          span.textContent = crumb.label;
+          crumbsEl.appendChild(span);
+        }
+      });
+
+      // Per-slide text style (breadcrumb vs label).
+      overlay.classList.remove('title-style-breadcrumb', 'title-style-label');
+      overlay.classList.add('title-style-' + (el.dataset.titleStyle || 'breadcrumb'));
+
+      // Boxed vs text-only.
+      const bg = el.dataset.titleBg || '';
+      const color = el.dataset.titleColor || '';
+      if (bg) {
+        overlay.classList.add('boxed');
+        overlay.style.setProperty('--title-bg', bg);
+        overlay.style.setProperty('--title-color', color || '#fff');
+      } else {
+        overlay.classList.remove('boxed');
+        overlay.style.removeProperty('--title-bg');
+        overlay.style.removeProperty('--title-color');
+      }
+    }
+
+    /* Menu color + nav/title/breadcrumb glow. */
     function updateMenuColor() {
-      const color = (slides[current] as HTMLElement).dataset.menuColor || 'white';
+      const el = slides[current] as HTMLElement;
+      const color = el.dataset.menuColor || 'white';
       document.body.classList.remove('menu-white', 'menu-black');
       document.body.classList.add('menu-' + color);
 
-      const shadowColor = (slides[current] as HTMLElement).dataset.shadowColor || '';
+      const shadowColor = el.dataset.shadowColor || '';
       const glow = shadowColor
         ? `0 0 10px ${shadowColor}, 0 0 20px ${shadowColor}, 0 0 40px ${shadowColor}, 0 0 80px ${shadowColor}`
         : '';
@@ -71,6 +184,17 @@ const resolvedSlides = await Promise.all(
       navLinks.forEach((link) => {
         (link as HTMLElement).style.textShadow = glow;
       });
+
+      updateBreadcrumb();
+
+      // Apply glow to the (rebuilt) breadcrumb pieces, but only when NOT boxed.
+      if (overlay && !overlay.classList.contains('boxed')) {
+        const crumbs = overlay.querySelectorAll('.breadcrumbs, .breadcrumbs a, .breadcrumbs span');
+        crumbs.forEach((c) => { (c as HTMLElement).style.textShadow = glow; });
+      } else if (overlay) {
+        const crumbs = overlay.querySelectorAll('.breadcrumbs, .breadcrumbs a, .breadcrumbs span');
+        crumbs.forEach((c) => { (c as HTMLElement).style.textShadow = ''; });
+      }
     }
 
     /* Auto-advance timer */
@@ -112,7 +236,6 @@ const resolvedSlides = await Promise.all(
     });
 
     /* Click to navigate */
-
     slides.forEach((slide) => {
       slide.addEventListener('click', function (this: HTMLElement) {
         if (!wasDrag) {
@@ -154,7 +277,7 @@ const resolvedSlides = await Promise.all(
       isAnimating = false;
     }
 
-    showEl?.addEventListener('touchstart', (e) => {
+    showEl.addEventListener('touchstart', (e) => {
       if ((e.target as HTMLElement).closest('.slide-arrow')) return;
       if (e.changedTouches.length !== 1 || isAnimating) return;
       touchStartX = e.changedTouches[0].screenX;
@@ -166,8 +289,7 @@ const resolvedSlides = await Promise.all(
       clearInterval(timer);
     }, { passive: true });
 
-
-    showEl?.addEventListener('touchmove', (e) => {
+    showEl.addEventListener('touchmove', (e) => {
       if (e.changedTouches.length !== 1 || isAnimating) return;
       const dx = e.changedTouches[0].screenX - touchStartX;
       const dy = e.changedTouches[0].screenY - touchStartY;
@@ -198,12 +320,12 @@ const resolvedSlides = await Promise.all(
         : `translateX(${-w + dx}px)`;
     }, { passive: true });
 
-    showEl?.addEventListener('touchcancel', () => {
+    showEl.addEventListener('touchcancel', () => {
       /* Finger lifted/cancelled without a drag: restart the countdown */
       if (!isDragging && !isAnimating) startTimer();
     }, { passive: true });
 
-    showEl?.addEventListener('touchend', (e) => {
+    showEl.addEventListener('touchend', (e) => {
       if (e.changedTouches.length !== 1) return;
       if (!isDragging) {
         /* A tap/hold with no drag: resume the timer from release */
@@ -212,7 +334,6 @@ const resolvedSlides = await Promise.all(
       }
 
       const dx = e.changedTouches[0].screenX - touchStartX;
-
       const w = showEl.offsetWidth;
       const fromIdx = current;
       const toIdx = adjIdx;
@@ -238,7 +359,6 @@ const resolvedSlides = await Promise.all(
           startTimer();
         });
       } else {
-
         /* Snap back */
         (slides[fromIdx] as HTMLElement).style.transition = BACK;
         (slides[fromIdx] as HTMLElement).style.transform = 'translateX(0)';
@@ -258,7 +378,6 @@ const resolvedSlides = await Promise.all(
         });
       }
     }, { passive: true });
-
 
     /* Init */
     updateMenuColor();

@@ -1,84 +1,161 @@
+export interface Crumb {
+  /** Text shown for this breadcrumb segment. */
+  label: string;
+  /** If present, the segment is a link; otherwise it renders as plain text. */
+  href?: string;
+}
+
 export interface Slide {
-  image: string;
-  title: string;
+  /** Where clicking the slide navigates to. */
   link: string;
+  /** Drives the header/menu text color (and which body class is applied). */
   menuColor: 'black' | 'white';
-  wideMode?: 'contain' | 'cover';
+  /** Letterbox / side fill color behind contained images. */
   sideColor?: string;
+  /** Glow color applied to the site title, nav, and breadcrumb overlay. */
   shadowColor?: string;
+
+  /**
+   * Title / breadcrumb content. Flexible trail:
+   *   single title → [{ label: 'Biography' }]
+   *   trail        → [{ label: 'Art', href: '/art' }, { label: 'Houston' }]
+   */
+  crumbs?: Crumb[];
+  /** Simple label / a11y fallback. */
+  title?: string;
+
+  /**
+   * Per-slide BOXED title style (the "homepage" look). When `titleBackground`
+   * is set, the overlay renders against a solid box using these colors on
+   * desktop/tablet. When omitted, the overlay is the text-only breadcrumb
+   * (the "art" look) on desktop. On mobile (≤800px) the overlay is always a
+   * full-width solid bar anchored to the bottom — using these colors if set,
+   * otherwise derived from `menuColor`.
+   */
+  titleBackground?: string;
+  titleColor?: string;
+
+  /**
+   * Text style for the title/breadcrumb overlay. Defaults to 'breadcrumb'
+   * (the large Josefin Sans look from the art page). Use 'label' for the
+   * smaller uppercase Helvetica look from the old homepage title.
+   */
+  titleStyle?: 'breadcrumb' | 'label';
+
+  /* ---- Single-image mode (homepage) ---- */
+  image?: string;
+  wideMode?: 'contain' | 'cover';
+
+  /* ---- Dual-image mode (art): responsive landscape/portrait swap ---- */
+  landscape?: string;
+  portrait?: string;
+  collection?: string;
 }
 
 export const slides: Slide[] = [
   {
     image: "images/homepage/judy_rosenthal_site_cover_photo.png",
     title: "Biography",
+    crumbs: [{ label: "Biography" }],
     link: "/biography/",
     menuColor: "white",
     wideMode: "contain",
     sideColor: "#76A7C0",
-    shadowColor: "rgba(0, 0, 0, 0.75)"
+    shadowColor: "rgba(0, 0, 0, 0.75)",
+    titleBackground: "white",
+    titleColor: "#222",
+    titleStyle: "label"
   },
   {
     image: "images/homepage/02_The_Laura_full.jpg",
     title: "Art > Bicentennial Project",
+    crumbs: [{ label: "Art", href: "/art" }, { label: "Bicentennial Project" }],
     link: "/art/bicentennial-project/",
     menuColor: "white",
     wideMode: "contain",
-    sideColor: "#488cb1"
+    sideColor: "#488cb1",
+    titleBackground: "white",
+    titleColor: "#222",
+    titleStyle: "label"
   },
-{
+  {
     image: "images/homepage/07_Pegasus_full.jpg",
     title: "Art",
+    crumbs: [{ label: "Art" }],
     link: "/art",
     menuColor: "black",
-    sideColor: "#F1F3EE"
-
-},
+    sideColor: "#F1F3EE",
+    titleBackground: "black",
+    titleColor: "white",
+    titleStyle: "label"
+  },
   {
     image: "images/homepage/03_Courthouse Notecard_cropped.png",
     title: "Art > Houston",
+    crumbs: [{ label: "Art", href: "/art" }, { label: "Houston" }],
     link: "/art/houston/",
     menuColor: "white",
-    sideColor: "#271F02"
+    sideColor: "#271F02",
+    titleBackground: "white",
+    titleColor: "#222",
+    titleStyle: "label"
   },
   {
     image: "images/homepage/04_brown_landscape_full.jpg",
     title: "Art > Cubistic Extensionism",
+    crumbs: [{ label: "Art", href: "/art" }, { label: "Cubistic Extensionism" }],
     link: "/art/cubistic-extensionism/",
     menuColor: "white",
-    sideColor: "#6b5436"
+    sideColor: "#6b5436",
+    titleBackground: "white",
+    titleColor: "#222",
+    titleStyle: "label"
   },
-
   {
     image: "images/homepage/05_Liberty.jpg",
     title: "Art > Heritage",
+    crumbs: [{ label: "Art", href: "/art" }, { label: "Heritage" }],
     link: "/art/heritage/",
     menuColor: "white",
     wideMode: "contain",
-    sideColor: "#073a73"
+    sideColor: "#073a73",
+    titleBackground: "white",
+    titleColor: "#222",
+    titleStyle: "label"
   },
   {
     image: "images/homepage/06_The_Southwind_full.png",
     title: "Art > Seascapes",
+    crumbs: [{ label: "Art", href: "/art" }, { label: "Seascapes" }],
     link: "/art/seascapes/",
     menuColor: "white",
-    sideColor: "#3D449C"
+    sideColor: "#3D449C",
+    titleBackground: "white",
+    titleColor: "#222",
+    titleStyle: "label"
   },
   {
     image: "images/homepage/06B_Picnic_full.jpg",
     title: "Art > Landscapes",
+    crumbs: [{ label: "Art", href: "/art" }, { label: "Landscapes" }],
     link: "/art/landscapes/",
     menuColor: "black",
-    sideColor: "#378994"
+    sideColor: "#378994",
+    titleBackground: "black",
+    titleColor: "white",
+    titleStyle: "label"
   },
-
   {
     image: "images/homepage/08_family_homepage.jpeg",
     title: "Family",
+    crumbs: [{ label: "Family" }],
     link: "/family/",
     menuColor: "white",
     wideMode: "contain",
     sideColor: "#1a1208",
-    shadowColor: "rgba(0,0,0,0.75)"
+    shadowColor: "rgba(0,0,0,0.75)",
+    titleBackground: "white",
+    titleColor: "#222",
+    titleStyle: "label"
   }
 ];

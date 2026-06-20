@@ -259,44 +259,6 @@ a {
   pointer-events: auto;
 }
 
-/* ----- Title overlay (bottom-left) ----- */
-.slide-title {
-  position: absolute;
-  bottom: 40px;
-  left: 32px;
-  background: black;
-  color: white;
-  padding: 20px;
-  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-  font-size: 0.82rem;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  pointer-events: none; /* let clicks fall through to the slide */
-}
-
-/* Title bar color matches header text, text is the inverse */
-.page-home.menu-white .slide-title {
-  background: white;
-  color: #222;
-}
-
-.page-home.menu-black .slide-title {
-  background: black;
-  color: white;
-}
-
-/* On narrow viewports: full-viewport-width bar flush to the bottom */
-@media (max-width: 800px) {
-  .slide-title {
-    left: 0;
-    width: 100vw;
-    bottom: 0;
-    font-size: 0.75rem;
-    padding: 16px 20px;
-  }
-}
-
-
 /* ----- Wide-mode: contain (portrait images on large screens) ----- */
 @media (min-width: 1000px) {
   .slide[data-wide-mode="contain"] {
@@ -339,7 +301,16 @@ a {
   }
 }
 
-/* ----- Breadcrumbs overlay on the art slideshow (bottom-left) ----- */
+/* ======================================================
+   TITLE / BREADCRUMB OVERLAY (shared by home + art)
+   ======================================================
+   Three presentation states:
+   A. Text-only (default desktop/tablet): menu-colored text + glow.
+   B. Boxed (per-slide): solid box using --title-bg / --title-color.
+   C. Mobile (≤800px): ALWAYS a full-width solid bar anchored to the
+      bottom — using the slide's custom colors if set, otherwise derived
+      from the menu color. */
+
 .slide-breadcrumbs {
   position: absolute;
   bottom: 40px;
@@ -352,25 +323,94 @@ a {
   margin-bottom: 0;
 }
 
-/* Breadcrumb color follows the per-slide menu color */
-.page-home.menu-white .slide-breadcrumbs .breadcrumbs,
-.page-home.menu-white .slide-breadcrumbs .breadcrumbs a,
-.page-home.menu-white .slide-breadcrumbs .breadcrumbs span {
+/* ----- Text style: 'breadcrumb' (large Josefin Sans, the art look) ----- */
+/* (inherits the base .breadcrumbs rules — nothing extra needed) */
+
+/* ----- Text style: 'label' (small uppercase Helvetica, old home look) ----- */
+.slide-breadcrumbs.title-style-label .breadcrumbs {
+  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-size: 0.82rem;
+  font-weight: normal;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+/* A. Text-only colors follow the per-slide menu color (default) */
+.page-home.menu-white .slide-breadcrumbs:not(.boxed) .breadcrumbs,
+.page-home.menu-white .slide-breadcrumbs:not(.boxed) .breadcrumbs a,
+.page-home.menu-white .slide-breadcrumbs:not(.boxed) .breadcrumbs span {
   color: white;
 }
 
-.page-home.menu-black .slide-breadcrumbs .breadcrumbs,
-.page-home.menu-black .slide-breadcrumbs .breadcrumbs a,
-.page-home.menu-black .slide-breadcrumbs .breadcrumbs span {
+.page-home.menu-black .slide-breadcrumbs:not(.boxed) .breadcrumbs,
+.page-home.menu-black .slide-breadcrumbs:not(.boxed) .breadcrumbs a,
+.page-home.menu-black .slide-breadcrumbs:not(.boxed) .breadcrumbs span {
   color: black;
 }
 
+/* B. Boxed style (per-slide, desktop/tablet): solid box, custom colors */
+.slide-breadcrumbs.boxed {
+  background: var(--title-bg, #000);
+  padding: 16px 20px;
+}
+
+.slide-breadcrumbs.boxed .breadcrumbs,
+.slide-breadcrumbs.boxed .breadcrumbs a,
+.slide-breadcrumbs.boxed .breadcrumbs span {
+  color: var(--title-color, #fff);
+}
+
+/* C. Mobile / narrow: full-width solid bar anchored to the bottom.
+   Applies to BOTH boxed and text-only slides. */
 @media (max-width: 800px) {
   .slide-breadcrumbs {
     left: 0;
     width: 100vw;
-    bottom: 16px;
-    padding: 0 20px;
+    bottom: 0;
+    padding: 16px 20px;
+    /* default bar background derived from menu color (overridden below) */
+  }
+
+  /* In the anchored bottom bar, always use the smaller label-sized font,
+     regardless of the slide's titleStyle. */
+  .slide-breadcrumbs .breadcrumbs {
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    font-size: 0.82rem;
+    font-weight: normal;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+
+  /* Boxed slides keep their custom colors. */
+  .slide-breadcrumbs.boxed {
+    background: var(--title-bg, #000);
+  }
+
+  .slide-breadcrumbs.boxed .breadcrumbs,
+  .slide-breadcrumbs.boxed .breadcrumbs a,
+  .slide-breadcrumbs.boxed .breadcrumbs span {
+    color: var(--title-color, #fff);
+  }
+
+  /* Text-only slides get a menu-derived solid bar. */
+  .page-home.menu-white .slide-breadcrumbs:not(.boxed) {
+    background: white;
+  }
+  .page-home.menu-white .slide-breadcrumbs:not(.boxed) .breadcrumbs,
+  .page-home.menu-white .slide-breadcrumbs:not(.boxed) .breadcrumbs a,
+  .page-home.menu-white .slide-breadcrumbs:not(.boxed) .breadcrumbs span {
+    color: #222;
+    text-shadow: none !important;
+  }
+
+  .page-home.menu-black .slide-breadcrumbs:not(.boxed) {
+    background: black;
+  }
+  .page-home.menu-black .slide-breadcrumbs:not(.boxed) .breadcrumbs,
+  .page-home.menu-black .slide-breadcrumbs:not(.boxed) .breadcrumbs a,
+  .page-home.menu-black .slide-breadcrumbs:not(.boxed) .breadcrumbs span {
+    color: white;
+    text-shadow: none !important;
   }
 }
 
@@ -715,8 +755,9 @@ a {
     display: none;
   }
 
-  /* Slide title font tweak on small screens (position is set in the ≤800px block) */
-  .slide-title {
+  /* Title/breadcrumb font tweak on small screens (the 'label' style only;
+     position is set in the ≤800px block above) */
+  .slide-breadcrumbs.title-style-label .breadcrumbs {
     font-size: 0.72rem;
   }
 }

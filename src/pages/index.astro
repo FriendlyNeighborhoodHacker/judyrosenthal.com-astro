@@ -2,9 +2,10 @@
 import BaseLayout from '../layouts/BaseLayout.astro';
 import Header from '../components/Header.astro';
 import Slideshow from '../components/Slideshow.astro';
+import { slides } from '../data/slides';
 ---
 
 <BaseLayout title="Judy Rosenthal" bodyClass="page-home">
   <Header isHome={true} />
-  <Slideshow />
+  <Slideshow slides={slides} imageDir="homepage" />
 </BaseLayout>

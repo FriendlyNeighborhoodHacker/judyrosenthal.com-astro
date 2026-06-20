@@ -1,10 +1,11 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import Header from '../../components/Header.astro';
-import ArtSlideshow from '../../components/ArtSlideshow.astro';
+import Slideshow from '../../components/Slideshow.astro';
+import { artSlides } from '../../data/artSlides';
 ---
 
 <BaseLayout title="Art | Judy Rosenthal" bodyClass="page-home">
   <Header />
-  <ArtSlideshow />
+  <Slideshow slides={artSlides} imageDir="art" />
 </BaseLayout>
