@@ -13,7 +13,10 @@
 
 <script>
   (function () {
-    const items = Array.from(document.querySelectorAll('.photo-grid-item'));
+    const items = Array.from(
+      document.querySelectorAll('.photo-grid-item, .lightbox-item')
+    );
+
     if (!items.length) return;
     
     const lb = document.getElementById('lightbox') as HTMLElement | null;

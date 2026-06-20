@@ -1,0 +1,152 @@
+---
+import { Image } from 'astro:assets';
+
+interface Props {
+  /** Directory under src/assets/images, e.g. 'art/collections/the_bicentennial_collection'. */
+  collectionDir: string;
+  /** Optional override for the fixed painting height on desktop. When omitted,
+      the standardized height from the stylesheet (--painting-height) is used. */
+  height?: string;
+}
+
+const { collectionDir, height } = Astro.props;
+
+
+// Glob every image, then filter to the exact collection directory.
+const images = import.meta.glob<{ default: ImageMetadata }>(
+  '/src/assets/images/**/*.{jpeg,jpg,png,gif,webp}'
+);
+
+const cleanDir = collectionDir.replace(/^\/+|\/+$/g, '');
+const normalizedDir = `/src/assets/images/${cleanDir}/`;
+const collectionImages = Object.entries(images).filter(([path]) =>
+  path.startsWith(normalizedDir)
+);
+
+const filenameOf = (p: string) => p.split('/').pop() || '';
+
+// Parse a leading "NN_" order prefix and a display name from each filename.
+function parse(filename: string) {
+  const match = filename.match(/^(\d+)[_\s-]+(.*)$/);
+  const hasOrder = Boolean(match);
+  const order = hasOrder ? parseInt(match![1], 10) : Number.POSITIVE_INFINITY;
+  // Strip the order prefix (if any) and the extension for the display name.
+  let name = hasOrder ? match![2] : filename;
+  name = name.replace(/\.[^.]+$/, '');
+  return { hasOrder, order, name };
+}
+
+// Sort: numbered files by their number (ascending); unnumbered files come
+// after, in alphabetical (folder) order.
+const items = collectionImages
+  .map(([path, mod]) => {
+    const filename = filenameOf(path);
+    const { hasOrder, order, name } = parse(filename);
+    return { path, mod, filename, hasOrder, order, name };
+  })
+  .sort((a, b) => {
+    if (a.hasOrder && b.hasOrder) return a.order - b.order;
+    if (a.hasOrder) return -1;
+    if (b.hasOrder) return 1;
+    return a.filename.localeCompare(b.filename);
+  });
+---
+
+{items.length > 0 && (
+  <div class="collection-carousel-wrapper" style={height ? `--painting-height: ${height};` : undefined}>
+
+    <button class="collection-arrow prev" aria-label="Previous">&lt;</button>
+
+    <div class="collection-carousel" id="collection-carousel">
+      {items.map(async (item) => {
+        const image = await item.mod();
+        return (
+          <figure
+            class="collection-item lightbox-item"
+            data-filename={item.filename}
+            data-desc={item.name}
+          >
+
+            <div class="collection-image">
+              <Image
+                src={image.default}
+                alt={item.name}
+                widths={[500, 1200, 1800]}
+                sizes="(max-width: 800px) 100vw, 600px"
+                format="webp"
+                loading="lazy"
+              />
+            </div>
+            <figcaption class="collection-name">{item.name}</figcaption>
+          </figure>
+        );
+      })}
+    </div>
+
+    <button class="collection-arrow next" aria-label="Next">&gt;</button>
+  </div>
+)}
+
+<script>
+  (function () {
+    const trackEl = document.getElementById('collection-carousel');
+    if (!trackEl) return;
+    const track = trackEl as HTMLElement;
+    const wrapperEl = track.closest('.collection-carousel-wrapper');
+    if (!wrapperEl) return;
+    const wrapper = wrapperEl as HTMLElement;
+
+    const prevBtn = wrapper.querySelector('.collection-arrow.prev') as HTMLElement | null;
+    const nextBtn = wrapper.querySelector('.collection-arrow.next') as HTMLElement | null;
+
+    /* Distance to scroll per arrow click: roughly one painting's width. */
+    function stepSize(): number {
+      const first = track.querySelector('.collection-item') as HTMLElement | null;
+      if (first) {
+        const styles = getComputedStyle(track);
+        const gap = parseFloat(styles.columnGap || styles.gap || '0') || 0;
+        return first.getBoundingClientRect().width + gap;
+      }
+      return track.clientWidth * 0.8;
+    }
+
+    function atEnd(): boolean {
+      return track.scrollLeft + track.clientWidth >= track.scrollWidth - 2;
+    }
+
+    function atStart(): boolean {
+      return track.scrollLeft <= 2;
+    }
+
+    /* When at the far end, the next arrow "flips" to point back to the start;
+       symmetrically the prev arrow flips at the start. */
+    function updateArrows() {
+      if (nextBtn) {
+        nextBtn.classList.toggle('flipped', atEnd());
+      }
+      if (prevBtn) {
+        prevBtn.classList.toggle('flipped', atStart());
+      }
+    }
+
+    nextBtn?.addEventListener('click', () => {
+      if (atEnd()) {
+        track.scrollTo({ left: 0, behavior: 'smooth' });
+      } else {
+        track.scrollBy({ left: stepSize(), behavior: 'smooth' });
+      }
+    });
+
+    prevBtn?.addEventListener('click', () => {
+      if (atStart()) {
+        track.scrollTo({ left: track.scrollWidth, behavior: 'smooth' });
+      } else {
+        track.scrollBy({ left: -stepSize(), behavior: 'smooth' });
+      }
+    });
+
+    track.addEventListener('scroll', updateArrows, { passive: true });
+    window.addEventListener('resize', updateArrows);
+    updateArrows();
+  })();
+</script>

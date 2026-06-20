@@ -12,6 +12,7 @@ interface Props {
     heroHeight?: string;
     heroPosition?: string;
     albumDir?: string;
+    collection?: boolean;
   };
   title?: string;
   showBreadcrumbs?: boolean;
@@ -23,10 +24,13 @@ const hero = frontmatter?.hero;
 const heroHeight = frontmatter?.heroHeight ?? '250px';
 const heroPosition = frontmatter?.heroPosition ?? 'center';
 const albumDir = frontmatter?.albumDir;
+const isCollection = frontmatter?.collection ?? false;
 const pageTitle = `${title} | Judy Rosenthal`;
+const bodyClass = isCollection ? 'page-content page-collection' : 'page-content';
 ---
 
-<BaseLayout title={pageTitle} bodyClass="page-content">
+<BaseLayout title={pageTitle} bodyClass={bodyClass}>
+
   <Header />
   <hr class="content-rule" />
   <main class="content-body">

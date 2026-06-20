@@ -563,8 +563,206 @@ a {
 }
 
 /* ======================================================
+   COLLECTION CAROUSEL (art collection pages)
+   ======================================================
+   Desktop (>800px): horizontal scrolling row, each painting a fixed
+   vertical height (variable width) with a gap, navigated by arrows.
+   Mobile (≤800px): vertical column, each painting full screen width,
+   with the painting title beneath acting as a separator. */
+
+.collection-carousel-wrapper {
+  /* Fill most of the viewport height so paintings are large.
+     Standardized height — capped so it doesn't get absurd on tall monitors. */
+  --painting-height: min(70vh, 800px);
+  --painting-gap: 32px;
+
+  position: relative;
+  /* Break out of the centered .content-body column to span the full width. */
+  width: 100vw;
+  margin-left: calc(50% - 50vw);
+  margin-top: 0;
+  margin-bottom: 2.5rem;
+  padding: 0 56px;
+}
+
+/* On collection pages, pull the breadcrumb out of the centered content
+   column and flush it to the far-left edge of the screen (aligned with the
+   full-bleed paintings). The wrapper's own left padding matches the carousel. */
+.page-collection .content-body > .breadcrumbs {
+  width: 100vw;
+  margin-left: calc(50% - 50vw);
+  padding-left: 56px;
+  padding-right: 56px;
+}
+
+@media (max-width: 800px) {
+  .page-collection .content-body > .breadcrumbs {
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+}
+
+/* Layout wrapper: lets us re-order the description relative to the carousel.
+
+   Desktop (default): carousel first, description below.
+   Mobile (≤800px): description first (on top), carousel below. */
+.collection-layout {
+  display: flex;
+  flex-direction: column;
+}
+
+.collection-layout .collection-carousel-wrapper {
+  order: 1;
+}
+
+.collection-description {
+  order: 2;
+  /* Keep the description aligned to the centered content column. */
+  max-width: 900px;
+  margin: 1rem auto 0;
+}
+
+@media (max-width: 800px) {
+  .collection-description {
+    order: 0;          /* show above the carousel on mobile */
+    margin-top: 0;
+    margin-bottom: 1rem;
+  }
+}
+
+/* Horizontal scrolling track */
+.collection-carousel {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: var(--painting-gap);
+  overflow-x: auto;
+  scroll-behavior: smooth;
+  padding: 8px 4px 12px;
+  scrollbar-width: none;            /* Firefox */
+}
+
+.collection-carousel::-webkit-scrollbar {
+  display: none;                    /* Chrome/Safari */
+}
+
+.collection-item {
+  flex: 0 0 auto;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  cursor: pointer;
+}
+
+/* Desktop: every painting shares the same FIXED height; the width varies
+   with the image's aspect ratio. The image is never cropped. */
+.collection-image {
+  height: var(--painting-height);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.collection-image img {
+  height: var(--painting-height);
+  width: auto;
+  max-width: none;
+  display: block;
+  object-fit: contain;     /* preserve aspect ratio — never crop */
+  transition: transform 0.25s ease;
+}
+
+.collection-item:hover .collection-image img {
+  transform: scale(1.03);
+}
+
+.collection-name {
+  margin-top: 14px;
+  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-size: 0.82rem;
+  letter-spacing: 0.06em;
+  color: #333;
+  text-align: center;
+  max-width: 360px;
+  line-height: 1.4;
+}
+
+/* ----- Carousel arrows (match the homepage slideshow arrows) ----- */
+.collection-arrow {
+  position: absolute;
+  top: calc(var(--painting-height) / 2 + 8px);
+  transform: translateY(-50%);
+  z-index: 20;
+  background: transparent;
+  border: none;
+  color: white;
+  font-size: 3.5rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 10px 20px;
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.7);
+  user-select: none;
+  transition: opacity 0.2s;
+}
+
+.collection-arrow:hover {
+  opacity: 0.65;
+}
+
+.collection-arrow.prev { left: 6px; }
+.collection-arrow.next { right: 6px; }
+
+/* When scrolled to the far end, the arrow flips to point back to the start */
+.collection-arrow.flipped {
+  transform: translateY(-50%) scaleX(-1);
+}
+
+/* ----- Mobile (≤800px): vertical, full-width ----- */
+@media (max-width: 800px) {
+  .collection-carousel {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
+    overflow-x: visible;
+    padding: 0;
+  }
+
+  .collection-item {
+    width: 100%;
+    margin-bottom: 2.5rem;
+  }
+
+  /* Mobile: every painting shares the same FIXED width (full screen);
+     the height varies with the image's aspect ratio. Never cropped. */
+  .collection-image {
+    height: auto;
+    width: 100%;
+  }
+
+  .collection-image img {
+    height: auto;
+    width: 100%;
+    max-width: 100%;
+    object-fit: contain;     /* preserve aspect ratio — never crop */
+  }
+
+  .collection-name {
+    max-width: none;
+    width: 100%;
+    margin-top: 12px;
+  }
+
+  /* No arrows on mobile — the user scrolls the page vertically */
+  .collection-arrow {
+    display: none;
+  }
+}
+
+/* ======================================================
    PHOTO GRID
    ====================================================== */
+
 
 .photo-grid {
   display: grid;

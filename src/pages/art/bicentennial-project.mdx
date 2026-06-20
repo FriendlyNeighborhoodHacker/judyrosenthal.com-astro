@@ -1,6 +1,23 @@
 ---
 title: "Bicentennial Project"
 layout: ../../layouts/ContentLayout.astro
+collection: true
 ---
 
+
+import CollectionCarousel from '../../components/CollectionCarousel.astro';
+import Lightbox from '../../components/Lightbox.astro';
+
+<div class="collection-layout">
+
+<div class="collection-description">
+
 Judy Rosenthal's Bicentennial Series depicting the history of the Port of Houston was accepted by the Smithsonian Institute and the Royal Library at Windsor, and was frequently featured by the Chamber of Commerce and Port of Houston magazines.
+
+</div>
+
+<CollectionCarousel collectionDir="art/collections/the_bicentennial_collection" />
+
+</div>
+
+<Lightbox />
