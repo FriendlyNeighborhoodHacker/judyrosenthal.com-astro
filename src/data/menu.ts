@@ -24,7 +24,8 @@ export const menu: MenuItem[] = [
       { name: "Heritage", url: "/art/heritage/" },
       { name: "Cubistic Extensionism", url: "/art/cubistic-extensionism/" },
       { name: "Seascapes", url: "/art/seascapes/" },
-      { name: "Landscapes", url: "/art/landscapes/" }
+      { name: "Landscapes", url: "/art/landscapes/" },
+      { name: "Still Life and Flowers", url: "/art/still-life-and-flowers/" }
     ]
   },
   {
