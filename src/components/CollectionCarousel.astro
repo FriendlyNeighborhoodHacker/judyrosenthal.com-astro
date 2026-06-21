@@ -120,22 +120,27 @@ const items = collectionImages
     const prevBtn = wrapper.querySelector('.collection-arrow.prev') as HTMLElement | null;
     const nextBtn = wrapper.querySelector('.collection-arrow.next') as HTMLElement | null;
 
-    /* The track's own left padding — painting offsetLefts include it, but
-       scrollLeft starts at 0, so we subtract it to get true scroll targets. */
-    function trackPadLeft(): number {
-      return parseFloat(getComputedStyle(track).paddingLeft || '0') || 0;
-    }
-
-    /* Scroll-target left position for each painting: its offsetLeft minus the
-       track's left padding, so the painting's left edge lands at the container
-       edge (and is therefore fully visible). */
-    function itemTargets(): number[] {
-      const pad = trackPadLeft();
-      const items = Array.from(
+    /* The first painting's offsetLeft is the baseline: scrollLeft === 0 must
+       line up with the first painting's left edge. Using the first item as the
+       reference (rather than reading individual paddings) avoids double-counting
+       the wrapper/track padding — which previously caused the first "next" click
+       to only nudge a few pixels instead of advancing a whole painting. */
+    function items(): HTMLElement[] {
+      return Array.from(
         track.querySelectorAll('.collection-item')
       ) as HTMLElement[];
-      return items.map((el) => Math.max(0, el.offsetLeft - pad));
     }
+
+    /* Scroll-target left position for each painting, relative to the first
+       painting, so target[0] === 0 and each subsequent target is a true
+       painting boundary. */
+    function itemTargets(): number[] {
+      const els = items();
+      if (els.length === 0) return [];
+      const base = els[0].offsetLeft;
+      return els.map((el) => Math.max(0, Math.round(el.offsetLeft - base)));
+    }
+
 
     /* Snap to the next painting (precise, regardless of width). */
     function nextOffset(): number {

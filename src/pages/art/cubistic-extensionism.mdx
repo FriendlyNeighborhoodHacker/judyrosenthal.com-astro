@@ -1,6 +1,22 @@
 ---
 title: "Cubistic Extensionism"
 layout: ../../layouts/ContentLayout.astro
+collection: true
 ---
 
+import CollectionCarousel from '../../components/CollectionCarousel.astro';
+import Lightbox from '../../components/Lightbox.astro';
+
+<div class="collection-layout">
+
+<div class="collection-description">
+
 Judy Rosenthal developed a distinct style she called "Cubistic Expressionism," which resembled stained glass.
+
+</div>
+
+<CollectionCarousel collectionDir="art/collections/cubistic_extensionism" />
+
+</div>
+
+<Lightbox />
