@@ -1,0 +1,69 @@
+---
+// Recipe modal dialog. Reads recipe content from hidden .recipe-data blocks
+// rendered on the page and pops a centered dialog when a gallery tile is clicked.
+---
+
+<div id="recipe-modal" role="dialog" aria-modal="true">
+  <div class="recipe-modal-box">
+    <button class="recipe-modal-close" aria-label="Close">&times;</button>
+    <h1 class="recipe-modal-title"></h1>
+    <div class="recipe-modal-body"></div>
+  </div>
+</div>
+
+<script>
+  (function () {
+    const modal = document.getElementById('recipe-modal') as HTMLElement | null;
+    if (!modal) return;
+
+    const titleEl = modal.querySelector('.recipe-modal-title') as HTMLElement;
+    const bodyEl = modal.querySelector('.recipe-modal-body') as HTMLElement;
+    const closeBtn = modal.querySelector('.recipe-modal-close');
+
+    const tiles = Array.from(
+      document.querySelectorAll('.recipe-grid-item')
+    ) as HTMLElement[];
+
+    function open(tile: HTMLElement) {
+      const slug = tile.dataset.slug || '';
+      const data = document.getElementById('recipe-data-' + slug);
+      if (!data) return;
+
+      const title = tile.dataset.title || '';
+      const imgEl = tile.querySelector('img') as HTMLImageElement | null;
+      const imgSrc = imgEl ? (imgEl.currentSrc || imgEl.src) : '';
+
+      titleEl.textContent = title;
+
+      const floatImg = imgSrc
+        ? `<img class="recipe-modal-image" src="${imgSrc}" alt="${title}">`
+        : '';
+
+      bodyEl.innerHTML = floatImg + data.innerHTML;
+      bodyEl.scrollTop = 0;
+      modal!.classList.add('open');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function close() {
+      modal!.classList.remove('open');
+      bodyEl.innerHTML = '';
+      document.body.style.overflow = '';
+    }
+
+    tiles.forEach((tile) => {
+      tile.addEventListener('click', () => open(tile));
+    });
+
+    closeBtn?.addEventListener('click', close);
+
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) close();
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (!modal.classList.contains('open')) return;
+      if (e.key === 'Escape') close();
+    });
+  })();
+</script>

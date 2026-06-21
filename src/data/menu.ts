@@ -30,18 +30,7 @@ export const menu: MenuItem[] = [
   },
   {
     name: "Recipes",
-    url: "/recipes/",
-    children: [
-      { name: "Cream Sauce", url: "/recipes/cream-sauce/" },
-      { name: "Cherry Cream Chicken", url: "/recipes/cherry-cream-chicken/" },
-      { name: "Salmon", url: "/recipes/salmon/" },
-      { name: "Asparagus", url: "/recipes/asparagus/" },
-      { name: "Turkey Dressing", url: "/recipes/turkey-dressing/" },
-      { name: "Cabbage Salad", url: "/recipes/cabbage-salad/" },
-      { name: "Meringues", url: "/recipes/merangues/" },
-      { name: "Hello Dollies", url: "/recipes/hello-dollies/" },
-      { name: "Derby Pie", url: "/recipes/derby-pie/" }
-    ]
+    url: "/recipes/"
   },
   {
     name: "Family",
