@@ -72,16 +72,16 @@ export const artSlides: Slide[] = [
     shadowColor: "rgba(0,0,0,0.75)"
   },
   {
-    collection: "abstract_expressionism",
-    title: "Abstract Expressionism",
+    collection: "cubistic_extensionism",
+    title: "Cubistic Extensionism",
     crumbs: [
       { label: "Home", href: "/" },
       { label: "Art", href: "/art/" },
-      { label: "Abstract Expressionism" }
+      { label: "Cubistic Extensionism" }
     ],
-    link: "/art/abstract-expressionism/",
-    landscape: "images/art/art_museum_gallery_homepage_images/art_abstract_expressionism_landscape.png",
-    portrait: "images/art/art_museum_gallery_homepage_images/art_abstract_expressionism_portrait.png",
+    link: "/art/cubistic_extensionism/",
+    landscape: "images/art/art_museum_gallery_homepage_images/art_cubistic_extensionism_landscape.png",
+    portrait: "images/art/art_museum_gallery_homepage_images/art_cubistic_extensionism_portrait.png",
     menuColor: "white",
     shadowColor: "rgba(0,0,0,0.75)"
   }
