@@ -1,6 +1,21 @@
 ---
 title: "Still Life and Flowers"
 layout: ../../layouts/ContentLayout.astro
+collection: true
 ---
 
-Judy Rosenthal's still life and floral paintings. Images coming soon.
+import CollectionCarousel from '../../components/CollectionCarousel.astro';
+import Lightbox from '../../components/Lightbox.astro';
+
+<div class="collection-layout">
+
+<div class="collection-description">
+
+
+</div>
+
+<CollectionCarousel collectionDir="art/collections/still_life_and_flowers" />
+
+</div>
+
+<Lightbox />
