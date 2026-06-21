@@ -109,16 +109,16 @@ export const slides: Slide[] = [
     shadowColor: "rgba(0,0,0,0.75)"
   },
   {
-    collection: "patriotic",
-    title: "Patriotic",
+    collection: "heritage",
+    title: "Heritage",
     crumbs: [
       { label: "Home", href: "/" },
       { label: "Art", href: "/art/" },
-      { label: "Patriotic" }
+      { label: "Heritage" }
     ],
-    link: "/art/patriotic/",
-    landscape: "images/art/art_museum_gallery_homepage_images/art_patriotic_landscape.png",
-    portrait: "images/art/art_museum_gallery_homepage_images/art_patriotic_portrait.png",
+    link: "/art/heritage/",
+    landscape: "images/art/art_museum_gallery_homepage_images/art_heritage_landscape.png",
+    portrait: "images/art/art_museum_gallery_homepage_images/art_heritage_portrait.png",
     menuColor: "white",
     shadowColor: "rgba(0,0,0,0.75)"
   },
