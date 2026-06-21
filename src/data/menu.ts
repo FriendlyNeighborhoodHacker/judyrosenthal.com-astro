@@ -25,7 +25,9 @@ export const menu: MenuItem[] = [
       { name: "Cubistic Extensionism", url: "/art/cubistic-extensionism/" },
       { name: "Seascapes", url: "/art/seascapes/" },
       { name: "Landscapes", url: "/art/landscapes/" },
-      { name: "Still Life and Flowers", url: "/art/still-life-and-flowers/" }
+      { name: "Still Life and Flowers", url: "/art/still-life-and-flowers/" },
+      { name: "Personal Art", url: "/art/personal-art/" },
+      { name: "Animals", url: "/art/animals/" },
     ]
   },
   {
@@ -35,13 +37,5 @@ export const menu: MenuItem[] = [
   {
     name: "Family",
     url: "/family/",
-    children: [
-      { name: "Brian Rosenthal", url: "/family/brian-rosenthal/" },
-      { name: "Lilly Rosenthal", url: "/family/lilly-rosenthal/" },
-      { name: "Charlie Rosenthal", url: "/family/charlie-rosenthal/" },
-      { name: "Eve Rosenthal", url: "/family/eve-rosenthal/" },
-      { name: "Lucy-Jane Watson", url: "/family/lucy-jane-watson/" },
-      { name: "Julien David Saks", url: "/family/julien-david-saks/" }
-    ]
   }
 ];
