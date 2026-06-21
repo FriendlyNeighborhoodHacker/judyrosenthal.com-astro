@@ -185,25 +185,52 @@ const items = collectionImages
       }
     }
 
-    nextBtn?.addEventListener('click', () => {
+    function goNext() {
       if (atEnd()) {
         track.scrollTo({ left: 0, behavior: 'smooth' });
       } else {
         track.scrollTo({ left: nextOffset(), behavior: 'smooth' });
       }
-    });
+    }
 
-    prevBtn?.addEventListener('click', () => {
+    function goPrev() {
       if (atStart()) {
         track.scrollTo({ left: track.scrollWidth, behavior: 'smooth' });
       } else {
         track.scrollTo({ left: prevOffset(), behavior: 'smooth' });
       }
+    }
+
+    nextBtn?.addEventListener('click', goNext);
+    prevBtn?.addEventListener('click', goPrev);
+
+    /* Keyboard arrows mirror the on-screen arrow buttons, including the
+       wrap-around behavior at the start/end. Ignore them while the lightbox
+       is open (it handles its own arrow navigation) or while the user is
+       typing in a form field. */
+    document.addEventListener('keydown', (e) => {
+      if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+
+      const lb = document.getElementById('lightbox');
+      if (lb && lb.classList.contains('open')) return;
+
+      const active = document.activeElement as HTMLElement | null;
+      if (active) {
+        const tag = active.tagName;
+        if (tag === 'INPUT' || tag === 'TEXTAREA' || active.isContentEditable) {
+          return;
+        }
+      }
+
+      e.preventDefault();
+      if (e.key === 'ArrowRight') goNext();
+      else goPrev();
     });
 
 
     track.addEventListener('scroll', updateArrows, { passive: true });
     window.addEventListener('resize', updateArrows);
     updateArrows();
+
   })();
 </script>
