@@ -6,17 +6,26 @@ interface Props {
   heroHeight?: string;
   heroPosition?: string;
   alt?: string;
+  lightbox?: boolean;
 }
 
-const { hero, heroHeight = '250px', heroPosition = 'center', alt = '' } = Astro.props;
+const { hero, heroHeight = '250px', heroPosition = 'center', alt = '', lightbox = false } = Astro.props;
 
 const images = import.meta.glob<{ default: ImageMetadata }>('/src/assets/**/*.{jpeg,jpg,png,gif}');
 const imagePath = `/src/assets/${hero}`;
 const imageModule = images[imagePath];
+
+const heroFilename = hero.split('/').pop() || '';
 ---
 
 {imageModule && (
-  <div class="section-hero" style={`height: ${heroHeight}`}>
+  <div
+    class={`section-hero${lightbox ? ' section-hero-lightbox lightbox-item' : ''}`}
+    style={`height: ${heroHeight}`}
+    data-desc={lightbox ? alt : undefined}
+    data-filename={lightbox ? heroFilename : undefined}
+  >
     <Image src={imageModule()} alt={alt} width={1200} style={`object-position: ${heroPosition}`} />
   </div>
 )}
+

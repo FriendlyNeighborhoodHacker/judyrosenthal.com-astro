@@ -5,6 +5,8 @@ import path from 'node:path';
 import { createMarkdownProcessor } from '@astrojs/markdown-remark';
 import ContentLayout from '../../layouts/ContentLayout.astro';
 import RecipeModal from '../../components/RecipeModal.astro';
+import Lightbox from '../../components/Lightbox.astro';
+
 
 /* ---------- Title helper (same convention as the collection pages) ---------- */
 function smartTitleCase(str: string) {
@@ -74,9 +76,11 @@ function scoreSection(section: string, keywords: string[]): number {
 
 const processor = await createMarkdownProcessor({});
 
-const imageEntries = Object.entries(imageGlob).sort(([a], [b]) =>
-  a.localeCompare(b)
-);
+// Exclude the hero banner image from the gallery; it's shown as the page hero.
+const imageEntries = Object.entries(imageGlob)
+  .filter(([p]) => (p.split('/').pop() || '').toLowerCase() !== 'hero.jpg')
+  .sort(([a], [b]) => a.localeCompare(b));
+
 
 const usedSections = new Set<number>();
 type Recipe = {
@@ -149,7 +153,9 @@ const frontmatter = {
   hero: 'images/recipes/hero.jpg',
   heroPosition: 'center',
   heroHeight: '350px',
+  heroLightbox: true,
 };
+
 ---
 
 <ContentLayout frontmatter={frontmatter}>
@@ -190,4 +196,6 @@ const frontmatter = {
   </div>
 
   <RecipeModal />
+  <Lightbox />
 </ContentLayout>
+

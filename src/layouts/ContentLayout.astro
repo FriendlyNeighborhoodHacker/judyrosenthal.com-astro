@@ -13,6 +13,7 @@ interface Props {
     heroPosition?: string;
     albumDir?: string;
     collection?: boolean;
+    heroLightbox?: boolean;
   };
   title?: string;
   showBreadcrumbs?: boolean;
@@ -23,7 +24,9 @@ const title = frontmatter?.title ?? Astro.props.title ?? '';
 const hero = frontmatter?.hero;
 const heroHeight = frontmatter?.heroHeight ?? '250px';
 const heroPosition = frontmatter?.heroPosition ?? 'center';
+const heroLightbox = frontmatter?.heroLightbox ?? false;
 const albumDir = frontmatter?.albumDir;
+
 const isCollection = frontmatter?.collection ?? false;
 const pageTitle = `${title} | Judy Rosenthal`;
 const bodyClass = isCollection ? 'page-content page-collection' : 'page-content';
@@ -34,7 +37,8 @@ const bodyClass = isCollection ? 'page-content page-collection' : 'page-content'
   <Header />
   <hr class="content-rule" />
   <main class="content-body">
-    {hero && <SectionHero hero={hero} heroHeight={heroHeight} heroPosition={heroPosition} alt={title} />}
+    {hero && <SectionHero hero={hero} heroHeight={heroHeight} heroPosition={heroPosition} alt={title} lightbox={heroLightbox} />}
+
     {showBreadcrumbs && <Breadcrumbs pathname={Astro.url.pathname} />}
     <slot />
   </main>

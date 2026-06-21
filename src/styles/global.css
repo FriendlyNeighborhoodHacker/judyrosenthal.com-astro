@@ -471,6 +471,19 @@ a {
   display: block;
 }
 
+.section-hero-lightbox {
+  cursor: pointer;
+}
+
+.section-hero-lightbox img {
+  transition: transform 0.4s ease;
+}
+
+.section-hero-lightbox:hover img {
+  transform: scale(1.03);
+}
+
+
 @media (max-width: 768px) {
   .section-hero {
     height: 160px;

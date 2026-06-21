@@ -15,7 +15,8 @@
   (function () {
     const items = Array.from(
       document.querySelectorAll('.photo-grid-item, .lightbox-item')
-    );
+    ).filter((el) => !(el as HTMLElement).dataset.slug); // skip recipe tiles (they open the recipe modal)
+
 
     if (!items.length) return;
     
