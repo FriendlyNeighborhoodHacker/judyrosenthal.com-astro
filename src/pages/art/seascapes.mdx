@@ -1,6 +1,22 @@
 ---
 title: "Seascapes"
 layout: ../../layouts/ContentLayout.astro
+collection: true
 ---
 
+import CollectionCarousel from '../../components/CollectionCarousel.astro';
+import Lightbox from '../../components/Lightbox.astro';
+
+<div class="collection-layout">
+
+<div class="collection-description">
+
 Judy Rosenthal painted vivid seascapes, including "The Southwind."
+
+</div>
+
+<CollectionCarousel collectionDir="art/collections/seascapes" />
+
+</div>
+
+<Lightbox />

@@ -1,6 +1,22 @@
 ---
 title: "Landscapes"
 layout: ../../layouts/ContentLayout.astro
+collection: true
 ---
 
+import CollectionCarousel from '../../components/CollectionCarousel.astro';
+import Lightbox from '../../components/Lightbox.astro';
+
+<div class="collection-layout">
+
+<div class="collection-description">
+
 Judy Rosenthal painted landscapes such as "Ducks on a Pond."
+
+</div>
+
+<CollectionCarousel collectionDir="art/collections/landscapes" />
+
+</div>
+
+<Lightbox />
