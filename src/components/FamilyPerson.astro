@@ -16,6 +16,7 @@ import {
   formatDisplayDate,
 } from '../lib/gedcom';
 import { renderMarkdown } from '../lib/markdown';
+import { heroObjectPosition } from '../lib/heroPosition';
 
 interface Props {
   id: string;
@@ -103,24 +104,7 @@ const heroHeight =
       : meta.hero_image_height
     : '400px';
 
-// Build the CSS object-position vertical from a keyword + optional offset.
-// A positive offset nudges the focal point AWAY from the anchored edge: for a
-// "top" anchor it moves the crop DOWN (i.e. "50px in from the top"), for a
-// "bottom" anchor it moves UP. Because object-fit:cover positive lengths shift
-// the image down (revealing higher content), "down" subtracts and "up" adds.
-function heroVertical(pos?: string, offset?: string): string {
-  const base = pos === 'top' ? '0%' : pos === 'bottom' ? '100%' : '50%';
-  if (offset) {
-    const o = String(offset).trim();
-    const negative = o.startsWith('-');
-    const mag = o.replace(/^[-+]/, '');
-    // bottom: away = up = add; top/center: away = down = subtract.
-    const op = pos === 'bottom' ? (negative ? '-' : '+') : negative ? '+' : '-';
-    return `calc(${base} ${op} ${mag})`;
-  }
-  return pos ?? 'center';
-}
-const heroPosition = `center ${heroVertical(meta.hero_image_position, meta.hero_image_offset)}`;
+const heroPosition = heroObjectPosition(meta.hero_image_position, meta.hero_image_offset);
 
 // --- Birth / death line (only for deceased people; living people show none) -
 // All dates/places come from the GEDCOM. Deceased = GEDCOM death record or born

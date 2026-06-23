@@ -27,6 +27,7 @@ let birthDate = '', birthPlace = '', deathDate = '', deathPlace = '';
 let descText = '';
 let links: { title: string; url: string }[] = [];
 let heroFile: string | null = null;
+let heroHeight = '', heroPosition = '', heroOffset = '';
 let albumDir = '';
 let photos: { filename: string; caption: string }[] = [];
 
@@ -47,7 +48,7 @@ if (id) {
     descText = '';
   }
 
-  // Links from metadata.json
+  // Links + hero settings from metadata.json
   try {
     const meta = JSON.parse(await fs.readFile(familyFile(slug, '_metadata.json'), 'utf-8'));
     if (Array.isArray(meta.links)) {
@@ -55,6 +56,9 @@ if (id) {
         .map((l: any) => ({ title: String(l?.title ?? ''), url: String(l?.url ?? '') }))
         .filter((l: any) => l.title && l.url);
     }
+    heroHeight = meta.hero_image_height != null ? String(meta.hero_image_height) : '';
+    heroPosition = typeof meta.hero_image_position === 'string' ? meta.hero_image_position : '';
+    heroOffset = meta.hero_image_offset != null ? String(meta.hero_image_offset) : '';
   } catch {
     links = [];
   }
@@ -75,7 +79,10 @@ if (id) {
   }
 }
 
-const init = { id, slug, albumDir, links, heroFile, photos };
+const init = {
+  id, slug, albumDir, links, heroFile, photos,
+  hero: { height: heroHeight, position: heroPosition, offset: heroOffset },
+};
 ---
 
 <BaseLayout title={`Edit ${name || 'Person'}`} bodyClass="page-edit-person">
@@ -130,10 +137,27 @@ const init = { id, slug, albumDir, links, heroFile, photos };
         <section class="ep-card">
           <h2>Hero image</h2>
           <div id="hero-drop" class="ep-drop">
-            <img id="hero-preview" alt="" hidden />
+            <div id="hero-frame" class="ep-hero-frame" hidden>
+              <img id="hero-preview" alt="" />
+            </div>
             <p id="hero-empty">Drag an image here, or choose a file. (jpeg/jpg/png/gif)</p>
             <input id="hero-input" type="file" accept="image/jpeg,image/png,image/gif" />
           </div>
+
+          <p class="ep-hint">The framed preview shows exactly how the hero will be cropped. A positive offset moves the crop away from the anchored edge (e.g. <code>top</code> + <code>50px</code> = 50px down from the top).</p>
+          <div class="ep-grid">
+            <label>Height<input id="hero-height" type="text" placeholder="450px" /></label>
+            <label>Position
+              <select id="hero-position">
+                <option value="">center (default)</option>
+                <option value="top">top</option>
+                <option value="center">center</option>
+                <option value="bottom">bottom</option>
+              </select>
+            </label>
+            <label>Offset<input id="hero-offset" type="text" placeholder="50px or -20px" /></label>
+          </div>
+          <button type="button" id="save-hero-settings">Save hero position</button>
         </section>
 
         {/* E. Photo album */}
@@ -179,13 +203,16 @@ const init = { id, slug, albumDir, links, heroFile, photos };
   .link-row button { background: #c0392b; padding: 0.4rem 0.7rem; margin: 0; }
   .ep-drop { border: 2px dashed #ccc; border-radius: 10px; padding: 1.25rem; text-align: center; color: #777; }
   .ep-drop.drag { border-color: #1a5; background: #f3fbf5; }
-  #hero-preview { max-width: 100%; max-height: 260px; border-radius: 8px; display: block; margin: 0 auto 0.75rem; }
+  .ep-hero-frame { width: 100%; max-width: 1000px; height: 400px; overflow: hidden; border-radius: 8px; margin: 0 auto 0.75rem; background: #f0f0f0; }
+  #hero-preview { width: 100%; height: 100%; object-fit: cover; object-position: center; display: block; }
   .ep-thumbs { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.75rem; }
   .ep-thumbs img { width: 84px; height: 84px; object-fit: cover; border-radius: 6px; background: #f0f0f0; }
   .ep-upload { flex-direction: row; align-items: center; gap: 0.5rem; font-weight: 400; margin-bottom: 0.75rem; }
 </style>
 
 <script>
+  import { heroObjectPosition } from '../lib/heroPosition';
+
   const initEl = document.getElementById('ep-init');
   if (initEl) {
     type LinkRow = { title: string; url: string };
@@ -193,6 +220,7 @@ const init = { id, slug, albumDir, links, heroFile, photos };
       id: string; slug: string; albumDir: string;
       links: LinkRow[]; heroFile: string | null;
       photos: { filename: string; caption: string }[];
+      hero: { height: string; position: string; offset: string };
     };
 
     const statusEl = document.getElementById('ep-status') as HTMLElement;
@@ -270,15 +298,34 @@ const init = { id, slug, albumDir, links, heroFile, photos };
 
     // --- D. Hero ---
     const drop = document.getElementById('hero-drop') as HTMLElement;
+    const frame = document.getElementById('hero-frame') as HTMLElement;
     const preview = document.getElementById('hero-preview') as HTMLImageElement;
     const heroEmpty = document.getElementById('hero-empty') as HTMLElement;
     const heroInput = document.getElementById('hero-input') as HTMLInputElement;
+    const heightInput = document.getElementById('hero-height') as HTMLInputElement;
+    const positionSelect = document.getElementById('hero-position') as HTMLSelectElement;
+    const offsetInput = document.getElementById('hero-offset') as HTMLInputElement;
+
+    heightInput.value = init.hero?.height ?? '';
+    positionSelect.value = init.hero?.position ?? '';
+    offsetInput.value = init.hero?.offset ?? '';
+
+    // Live preview: apply the chosen height + object-position to the framed image,
+    // using the exact same crop math as the real page.
+    function applyHeroPreview() {
+      frame.style.height = heightInput.value.trim() || '400px';
+      preview.style.objectPosition = heroObjectPosition(positionSelect.value, offsetInput.value);
+    }
     function showHero(file: string) {
       preview.src = `/api/photos/thumb?album=family&file=${encodeURIComponent(file)}&t=${Date.now()}`;
-      preview.hidden = false;
+      frame.hidden = false;
       heroEmpty.hidden = true;
+      applyHeroPreview();
     }
     if (init.heroFile) showHero(init.heroFile);
+    [heightInput, offsetInput].forEach((el) => el.addEventListener('input', applyHeroPreview));
+    positionSelect.addEventListener('change', applyHeroPreview);
+
     async function uploadHero(file: File) {
       setStatus('Uploading hero…');
       const fd = new FormData();
@@ -289,10 +336,23 @@ const init = { id, slug, albumDir, links, heroFile, photos };
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Upload failed');
         showHero(data.filename);
-        setStatus('Hero saved ✓ (reload the page to see it)', 'ok');
+        setStatus('Hero uploaded ✓ — now position it below and Save.', 'ok');
       } catch (e) { setStatus(String(e), 'err'); }
     }
     heroInput.addEventListener('change', () => { if (heroInput.files?.[0]) uploadHero(heroInput.files[0]); });
+
+    document.getElementById('save-hero-settings')?.addEventListener('click', async () => {
+      setStatus('Saving hero position…');
+      try {
+        await postJSON('/api/family/hero-settings', {
+          slug: init.slug,
+          hero_image_height: heightInput.value.trim(),
+          hero_image_position: positionSelect.value,
+          hero_image_offset: offsetInput.value.trim(),
+        });
+        setStatus('Hero position saved ✓ (reload the page to see it)', 'ok');
+      } catch (e) { setStatus(String(e), 'err'); }
+    });
     ['dragover', 'dragenter'].forEach((ev) => drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.add('drag'); }));
     ['dragleave', 'drop'].forEach((ev) => drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.remove('drag'); }));
     drop.addEventListener('drop', (e) => {
