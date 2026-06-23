@@ -18,6 +18,6 @@ const { model, slugMap, seeds, minors } = await loadFamilyData();
 const title = fullName(model, id);
 ---
 
-<ContentLayout title={title} showBreadcrumbs={false}>
+<ContentLayout title={title} showBreadcrumbs={false} personSlug={slugMap.get(id)}>
   <FamilyPerson id={id} model={model} slugMap={slugMap} seeds={seeds} minors={minors} />
 </ContentLayout>

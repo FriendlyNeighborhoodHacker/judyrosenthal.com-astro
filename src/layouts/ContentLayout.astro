@@ -17,9 +17,11 @@ interface Props {
   };
   title?: string;
   showBreadcrumbs?: boolean;
+  /** When set (family pages), the dev tools show "Edit Person" instead of "Edit Content". */
+  personSlug?: string;
 }
 
-const { frontmatter, showBreadcrumbs = true } = Astro.props;
+const { frontmatter, showBreadcrumbs = true, personSlug } = Astro.props;
 const title = frontmatter?.title ?? Astro.props.title ?? '';
 const hero = frontmatter?.hero;
 const heroHeight = frontmatter?.heroHeight ?? '250px';
@@ -46,8 +48,14 @@ const bodyClass = isCollection ? 'page-content page-collection' : 'page-content'
   
   {import.meta.env.DEV && (
     <div class="dev-tools">
-      <a href={`/edit?page=${Astro.url.pathname}`}>✏️ Edit Content</a>
-      {albumDir && <a href={`/manage-photos?album=${albumDir}&page=${Astro.url.pathname}`}>📸 Manage Photos</a>}
+      {personSlug ? (
+        <a href={`/edit-person?slug=${personSlug}`}>👤 Edit Person</a>
+      ) : (
+        <>
+          <a href={`/edit?page=${Astro.url.pathname}`}>✏️ Edit Content</a>
+          {albumDir && <a href={`/manage-photos?album=${albumDir}&page=${Astro.url.pathname}`}>📸 Manage Photos</a>}
+        </>
+      )}
     </div>
   )}
 </BaseLayout>

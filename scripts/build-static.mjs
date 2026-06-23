@@ -21,7 +21,7 @@ const PAGES = path.join(ROOT, 'src', 'pages');
 const STASH = path.join(ROOT, '.dev-tools-stash');
 
 // Paths (relative to src/pages) that must be removed for a static build.
-const DEV_ONLY = ['edit.astro', 'manage-photos.astro', 'api'];
+const DEV_ONLY = ['edit.astro', 'edit-person.astro', 'manage-photos.astro', 'api'];
 
 async function exists(p) {
   try {

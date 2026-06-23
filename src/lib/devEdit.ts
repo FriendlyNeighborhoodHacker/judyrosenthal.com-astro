@@ -12,6 +12,20 @@ import path from 'node:path';
 export const PROJECT_ROOT = path.resolve(process.cwd());
 export const PAGES_DIR = path.join(PROJECT_ROOT, 'src', 'pages');
 export const ASSETS_IMAGES_DIR = path.join(PROJECT_ROOT, 'src', 'assets', 'images');
+export const FAMILY_IMAGES_DIR = path.join(ASSETS_IMAGES_DIR, 'family');
+
+/** Validate a person slug (matches the slugs produced by src/lib/gedcom.ts). */
+export function validateSlug(slug: unknown): string {
+  if (typeof slug !== 'string' || !/^[a-z0-9_]+$/.test(slug)) {
+    throw new Error('Invalid slug');
+  }
+  return slug;
+}
+
+/** Absolute path to a family sidecar file, e.g. familyFile(slug, "_desc.md"). */
+export function familyFile(slug: string, suffix: string): string {
+  return path.join(FAMILY_IMAGES_DIR, `${validateSlug(slug)}${suffix}`);
+}
 
 /** Guard helper for API routes. Returns a 404 Response when not in dev. */
 export function devGuard(): Response | null {

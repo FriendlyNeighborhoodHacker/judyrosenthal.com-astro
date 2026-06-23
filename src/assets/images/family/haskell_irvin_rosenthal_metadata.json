@@ -1,5 +1,16 @@
 {
   "links": [
-    { "title": "haskellrosenthal.com", "url": "https://www.haskellrosenthal.com/" }
+    {
+      "title": "haskellrosenthal.com",
+      "url": "https://www.haskellrosenthal.com/"
+    },
+    {
+      "title": "Herald Voice Obituary",
+      "url": "https://jhvonline.com/haskell-irvin-rosenthal-p32068-124.htm"
+    },
+    {
+      "title": "Houston Chronicle Obituary",
+      "url": "https://www.legacy.com/us/obituaries/houstonchronicle/name/haskell-rosenthal-obituary?id=52217333"
+    }
   ]
 }

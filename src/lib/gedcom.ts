@@ -762,7 +762,9 @@ const GEDCOM_PATH = path.join(process.cwd(), 'src', 'data', 'judy_rosenthal_gene
 let _cache: FamilyData | null = null;
 
 export async function loadFamilyData(): Promise<FamilyData> {
-  if (_cache) return _cache;
+  // In dev, skip the cache so edits to the GEDCOM are reflected on reload. The
+  // static build keeps the cache (loadFamilyData is called many times).
+  if (_cache && !import.meta.env.DEV) return _cache;
   // GEDCOM file is ISO-8859-1 (Latin-1) with CRLF line endings.
   const text = await fs.readFile(GEDCOM_PATH, 'latin1');
   const model = parseGedcom(text);

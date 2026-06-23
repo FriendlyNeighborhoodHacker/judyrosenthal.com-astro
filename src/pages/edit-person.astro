@@ -1,0 +1,338 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import fs from 'node:fs/promises';
+import { loadFamilyData, fullName } from '../lib/gedcom';
+import { FAMILY_IMAGES_DIR, familyFile, resolveAlbumDir, listAlbum } from '../lib/devEdit';
+
+export const prerender = false;
+
+// DEV-ONLY page. In production this redirects home (and never gets built).
+if (!import.meta.env.DEV) {
+  return Astro.redirect('/');
+}
+
+const slug = Astro.url.searchParams.get('slug') ?? '';
+const { model, slugMap, seeds } = await loadFamilyData();
+
+// Resolve slug → @I id (reverse of slugMap).
+let id: string | null = null;
+for (const [pid, s] of slugMap) {
+  if (s === slug) { id = pid; break; }
+}
+
+let notFound = !id;
+let name = '';
+let viewHref = '/family/';
+let birthDate = '', birthPlace = '', deathDate = '', deathPlace = '';
+let descText = '';
+let links: { title: string; url: string }[] = [];
+let heroFile: string | null = null;
+let albumDir = '';
+let photos: { filename: string; caption: string }[] = [];
+
+if (id) {
+  const indi = model.individuals.get(id);
+  name = fullName(model, id);
+  viewHref = id === seeds.judith ? '/family/' : `/family/${slug}/`;
+  birthDate = indi?.birth?.date ?? '';
+  birthPlace = indi?.birth?.place ?? '';
+  deathDate = indi?.death?.date ?? '';
+  deathPlace = indi?.death?.place ?? '';
+  albumDir = `family/${slug}_album`;
+
+  // Description (.md)
+  try {
+    descText = (await fs.readFile(familyFile(slug, '_desc.md'), 'utf-8')).trim();
+  } catch {
+    descText = '';
+  }
+
+  // Links from metadata.json
+  try {
+    const meta = JSON.parse(await fs.readFile(familyFile(slug, '_metadata.json'), 'utf-8'));
+    if (Array.isArray(meta.links)) {
+      links = meta.links
+        .map((l: any) => ({ title: String(l?.title ?? ''), url: String(l?.url ?? '') }))
+        .filter((l: any) => l.title && l.url);
+    }
+  } catch {
+    links = [];
+  }
+
+  // Current hero file
+  try {
+    const entries = await fs.readdir(FAMILY_IMAGES_DIR);
+    heroFile = entries.find((f) => new RegExp(`^${slug}_hero\\.(jpe?g|png|gif)$`).test(f)) ?? null;
+  } catch {
+    heroFile = null;
+  }
+
+  // Album photos
+  try {
+    photos = await listAlbum(resolveAlbumDir(albumDir));
+  } catch {
+    photos = [];
+  }
+}
+
+const init = { id, slug, albumDir, links, heroFile, photos };
+---
+
+<BaseLayout title={`Edit ${name || 'Person'}`} bodyClass="page-edit-person">
+  <main class="ep">
+    {notFound ? (
+      <p class="ep-status err">No family member found for slug “{slug}”.</p>
+    ) : (
+      <>
+        <header class="ep-bar">
+          <h1>Edit Person</h1>
+          <div class="ep-meta">
+            <span>{name} · <code>{id}</code></span>
+            <a class="ep-view" href={viewHref} target="_blank" rel="noopener">View page ↗</a>
+          </div>
+        </header>
+
+        <p id="ep-status" class="ep-status" role="status"></p>
+
+        <script type="application/json" id="ep-init" set:html={JSON.stringify(init)}></script>
+
+        {/* A. Facts → GEDCOM */}
+        <section class="ep-card">
+          <h2>Birth &amp; death</h2>
+          <p class="ep-hint">Dates use raw GEDCOM format, e.g. <code>20 DEC 1943</code>, <code>ABT 1900</code>, <code>1685</code>. Clear both date and place to remove an event.</p>
+          <div class="ep-grid">
+            <label>Birth date<input id="birthDate" type="text" value={birthDate} placeholder="20 DEC 1943" /></label>
+            <label>Birth place<input id="birthPlace" type="text" value={birthPlace} placeholder="Anniston, Alabama" /></label>
+            <label>Death date<input id="deathDate" type="text" value={deathDate} placeholder="19 MAY 2026" /></label>
+            <label>Death place<input id="deathPlace" type="text" value={deathPlace} placeholder="White Plains, New York" /></label>
+          </div>
+          <button type="button" id="save-facts">Save birth/death</button>
+        </section>
+
+        {/* B. Description → {slug}_desc.md */}
+        <section class="ep-card">
+          <h2>Description</h2>
+          <p class="ep-hint">Markdown. Leave empty to fall back to the auto-generated relationship sentence.</p>
+          <textarea id="desc" rows="8" spellcheck="false">{descText}</textarea>
+          <button type="button" id="save-desc">Save description</button>
+        </section>
+
+        {/* C. Links → {slug}_metadata.json */}
+        <section class="ep-card">
+          <h2>Links</h2>
+          <p class="ep-hint">Obituary, website, articles — shown above the photo album.</p>
+          <div id="links-list"></div>
+          <button type="button" id="add-link" class="secondary">+ Add link</button>
+          <button type="button" id="save-links">Save links</button>
+        </section>
+
+        {/* D. Hero image */}
+        <section class="ep-card">
+          <h2>Hero image</h2>
+          <div id="hero-drop" class="ep-drop">
+            <img id="hero-preview" alt="" hidden />
+            <p id="hero-empty">Drag an image here, or choose a file. (jpeg/jpg/png/gif)</p>
+            <input id="hero-input" type="file" accept="image/jpeg,image/png,image/gif" />
+          </div>
+        </section>
+
+        {/* E. Photo album */}
+        <section class="ep-card">
+          <h2>Photo album</h2>
+          <p class="ep-hint"><span id="album-count"></span> · <a id="manage-link" href="#" target="_blank" rel="noopener">Reorder / caption / delete ↗</a></p>
+          <div id="album-thumbs" class="ep-thumbs"></div>
+          <label class="ep-upload">Add photos<input id="album-input" type="file" accept="image/*" multiple /></label>
+          <button type="button" id="upload-album">Upload to album</button>
+        </section>
+      </>
+    )}
+  </main>
+</BaseLayout>
+
+<style>
+  .ep { max-width: 820px; margin: 0 auto; padding: 2rem 1.5rem 4rem; font-family: system-ui, sans-serif; }
+  .ep-bar { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem; border-bottom: 1px solid #ddd; padding-bottom: 0.75rem; margin-bottom: 1rem; }
+  .ep-bar h1 { margin: 0; font-size: 1.4rem; }
+  .ep-meta { font-size: 0.85rem; color: #555; display: flex; gap: 1rem; align-items: baseline; }
+  .ep-meta code { background: #f3f3f3; padding: 0.1rem 0.3rem; border-radius: 3px; }
+  .ep-view { color: #1a5; text-decoration: none; }
+  .ep-status { min-height: 1.2rem; font-size: 0.9rem; }
+  .ep-status.ok { color: #1a7f37; }
+  .ep-status.err { color: #c0392b; }
+  .ep-card { border: 1px solid #e2e2e2; border-radius: 10px; padding: 1.1rem 1.25rem; margin-bottom: 1.25rem; background: #fff; }
+  .ep-card h2 { margin: 0 0 0.5rem; font-size: 1.05rem; }
+  .ep-hint { font-size: 0.8rem; color: #777; margin: 0 0 0.75rem; }
+  .ep-hint code { background: #f3f3f3; padding: 0.05rem 0.3rem; border-radius: 3px; }
+  .ep-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 0.9rem; }
+  label { display: flex; flex-direction: column; gap: 0.3rem; font-size: 0.85rem; font-weight: 600; color: #444; }
+  input[type="text"], textarea {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 0.85rem; padding: 0.5rem; border: 1px solid #ccc; border-radius: 6px;
+    box-sizing: border-box; width: 100%; font-weight: 400;
+  }
+  textarea { resize: vertical; line-height: 1.5; margin-bottom: 0.75rem; }
+  button { padding: 0.55rem 1.2rem; border: none; border-radius: 6px; background: #1a5; color: #fff; font-size: 0.9rem; cursor: pointer; margin-right: 0.5rem; }
+  button.secondary { background: #eee; color: #333; }
+  button:disabled { opacity: 0.6; cursor: default; }
+  .link-row { display: flex; gap: 0.5rem; margin-bottom: 0.5rem; align-items: center; }
+  .link-row input { flex: 1; }
+  .link-row button { background: #c0392b; padding: 0.4rem 0.7rem; margin: 0; }
+  .ep-drop { border: 2px dashed #ccc; border-radius: 10px; padding: 1.25rem; text-align: center; color: #777; }
+  .ep-drop.drag { border-color: #1a5; background: #f3fbf5; }
+  #hero-preview { max-width: 100%; max-height: 260px; border-radius: 8px; display: block; margin: 0 auto 0.75rem; }
+  .ep-thumbs { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.75rem; }
+  .ep-thumbs img { width: 84px; height: 84px; object-fit: cover; border-radius: 6px; background: #f0f0f0; }
+  .ep-upload { flex-direction: row; align-items: center; gap: 0.5rem; font-weight: 400; margin-bottom: 0.75rem; }
+</style>
+
+<script>
+  const initEl = document.getElementById('ep-init');
+  if (initEl) {
+    type LinkRow = { title: string; url: string };
+    const init = JSON.parse(initEl.textContent || '{}') as {
+      id: string; slug: string; albumDir: string;
+      links: LinkRow[]; heroFile: string | null;
+      photos: { filename: string; caption: string }[];
+    };
+
+    const statusEl = document.getElementById('ep-status') as HTMLElement;
+    function setStatus(msg: string, kind: '' | 'ok' | 'err' = '') {
+      statusEl.textContent = msg;
+      statusEl.className = 'ep-status' + (kind ? ' ' + kind : '');
+    }
+    const val = (sel: string) => (document.getElementById(sel) as HTMLInputElement)?.value ?? '';
+
+    async function postJSON(url: string, body: unknown) {
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Request failed');
+      return data;
+    }
+
+    // --- A. Facts ---
+    document.getElementById('save-facts')?.addEventListener('click', async () => {
+      setStatus('Saving birth/death…');
+      try {
+        await postJSON('/api/family/facts', {
+          id: init.id,
+          birthDate: val('birthDate'), birthPlace: val('birthPlace'),
+          deathDate: val('deathDate'), deathPlace: val('deathPlace'),
+        });
+        setStatus('Birth/death saved ✓ (reload the page to see it)', 'ok');
+      } catch (e) { setStatus(String(e), 'err'); }
+    });
+
+    // --- B. Description ---
+    document.getElementById('save-desc')?.addEventListener('click', async () => {
+      setStatus('Saving description…');
+      try {
+        await postJSON('/api/family/desc', {
+          slug: init.slug,
+          markdown: (document.getElementById('desc') as HTMLTextAreaElement).value,
+        });
+        setStatus('Description saved ✓', 'ok');
+      } catch (e) { setStatus(String(e), 'err'); }
+    });
+
+    // --- C. Links ---
+    const linksList = document.getElementById('links-list') as HTMLElement;
+    function addLinkRow(link: LinkRow = { title: '', url: '' }) {
+      const row = document.createElement('div');
+      row.className = 'link-row';
+      const t = document.createElement('input');
+      t.type = 'text'; t.placeholder = 'Title'; t.value = link.title; t.dataset.k = 'title';
+      const u = document.createElement('input');
+      u.type = 'text'; u.placeholder = 'https://…'; u.value = link.url; u.dataset.k = 'url';
+      const del = document.createElement('button');
+      del.type = 'button'; del.textContent = '✕';
+      del.addEventListener('click', () => row.remove());
+      row.append(t, u, del);
+      linksList.appendChild(row);
+    }
+    (init.links || []).forEach((l) => addLinkRow(l));
+    document.getElementById('add-link')?.addEventListener('click', () => addLinkRow());
+    document.getElementById('save-links')?.addEventListener('click', async () => {
+      const rows = Array.from(linksList.querySelectorAll('.link-row')).map((row) => {
+        const inputs = row.querySelectorAll('input');
+        const get = (k: string) => (Array.from(inputs).find((i) => (i as HTMLInputElement).dataset.k === k) as HTMLInputElement)?.value ?? '';
+        return { title: get('title'), url: get('url') };
+      });
+      setStatus('Saving links…');
+      try {
+        await postJSON('/api/family/links', { slug: init.slug, links: rows });
+        setStatus('Links saved ✓', 'ok');
+      } catch (e) { setStatus(String(e), 'err'); }
+    });
+
+    // --- D. Hero ---
+    const drop = document.getElementById('hero-drop') as HTMLElement;
+    const preview = document.getElementById('hero-preview') as HTMLImageElement;
+    const heroEmpty = document.getElementById('hero-empty') as HTMLElement;
+    const heroInput = document.getElementById('hero-input') as HTMLInputElement;
+    function showHero(file: string) {
+      preview.src = `/api/photos/thumb?album=family&file=${encodeURIComponent(file)}&t=${Date.now()}`;
+      preview.hidden = false;
+      heroEmpty.hidden = true;
+    }
+    if (init.heroFile) showHero(init.heroFile);
+    async function uploadHero(file: File) {
+      setStatus('Uploading hero…');
+      const fd = new FormData();
+      fd.append('slug', init.slug);
+      fd.append('file', file);
+      try {
+        const res = await fetch('/api/family/hero', { method: 'POST', body: fd });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Upload failed');
+        showHero(data.filename);
+        setStatus('Hero saved ✓ (reload the page to see it)', 'ok');
+      } catch (e) { setStatus(String(e), 'err'); }
+    }
+    heroInput.addEventListener('change', () => { if (heroInput.files?.[0]) uploadHero(heroInput.files[0]); });
+    ['dragover', 'dragenter'].forEach((ev) => drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.add('drag'); }));
+    ['dragleave', 'drop'].forEach((ev) => drop.addEventListener(ev, (e) => { e.preventDefault(); drop.classList.remove('drag'); }));
+    drop.addEventListener('drop', (e) => {
+      const file = (e as DragEvent).dataTransfer?.files?.[0];
+      if (file) uploadHero(file);
+    });
+
+    // --- E. Album ---
+    const manageLink = document.getElementById('manage-link') as HTMLAnchorElement;
+    manageLink.href = `/manage-photos?album=${encodeURIComponent(init.albumDir)}&page=${encodeURIComponent('/family/' + (init.slug ? init.slug + '/' : ''))}`;
+    const countEl = document.getElementById('album-count') as HTMLElement;
+    const thumbs = document.getElementById('album-thumbs') as HTMLElement;
+    function renderAlbum(photos: { filename: string }[]) {
+      countEl.textContent = `${photos.length} photo(s)`;
+      thumbs.innerHTML = '';
+      photos.forEach((p) => {
+        const img = document.createElement('img');
+        img.loading = 'lazy';
+        img.src = `/api/photos/thumb?album=${encodeURIComponent(init.albumDir)}&file=${encodeURIComponent(p.filename)}`;
+        thumbs.appendChild(img);
+      });
+    }
+    renderAlbum(init.photos || []);
+    const albumInput = document.getElementById('album-input') as HTMLInputElement;
+    document.getElementById('upload-album')?.addEventListener('click', async () => {
+      if (!albumInput.files?.length) { setStatus('Choose photos first.', 'err'); return; }
+      setStatus('Uploading to album…');
+      const fd = new FormData();
+      fd.append('album', init.albumDir);
+      Array.from(albumInput.files).forEach((f) => fd.append('files', f));
+      try {
+        const res = await fetch('/api/photos/upload', { method: 'POST', body: fd });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Upload failed');
+        // Refresh the album list.
+        const list = await fetch(`/api/photos/list?album=${encodeURIComponent(init.albumDir)}`).then((r) => r.json());
+        renderAlbum(list.photos || []);
+        albumInput.value = '';
+        setStatus(`Uploaded ${data.saved.length} photo(s) ✓`, 'ok');
+      } catch (e) { setStatus(String(e), 'err'); }
+    });
+  }
+</script>

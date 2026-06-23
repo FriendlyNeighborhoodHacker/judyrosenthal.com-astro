@@ -6,6 +6,6 @@ import { loadFamilyData } from '../../lib/gedcom';
 const { model, slugMap, seeds, minors } = await loadFamilyData();
 ---
 
-<ContentLayout title="Family" showBreadcrumbs={false}>
+<ContentLayout title="Family" showBreadcrumbs={false} personSlug={slugMap.get(seeds.judith)}>
   <FamilyPerson id={seeds.judith} model={model} slugMap={slugMap} seeds={seeds} minors={minors} isJudith={true} />
 </ContentLayout>
