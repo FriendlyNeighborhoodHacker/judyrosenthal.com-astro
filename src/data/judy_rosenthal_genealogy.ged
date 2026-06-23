@@ -1043,6 +1043,9 @@
 2 DATE 20 DEC 1943
 2 PLAC Anniston, Alabama, Calhoun County
 2 SOUR @S00001@
+1 DEAT
+2 DATE 19 MAY 2026
+2 PLAC White Plains, New York
 1 NOTE @N00002@
 1 FAMS @F00002@
 1 FAMC @F00008@

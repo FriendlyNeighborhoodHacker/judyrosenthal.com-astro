@@ -1,0 +1,276 @@
+---
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import SectionHero from './SectionHero.astro';
+import PhotoGrid from './PhotoGrid.astro';
+import Lightbox from './Lightbox.astro';
+import {
+  type GedcomModel,
+  fullName,
+  parentsOf,
+  siblingsOf,
+  childrenOf,
+  spousesOf,
+  describeRelationship,
+  isLikelyDeceased,
+  formatDisplayDate,
+} from '../lib/gedcom';
+import { renderMarkdown } from '../lib/markdown';
+
+interface Props {
+  id: string;
+  model: GedcomModel;
+  slugMap: Map<string, string>;
+  seeds: { judith: string; haskell: string; eugenie: string };
+  /** Protected minors — never named, only counted. */
+  minors: Set<string>;
+  isJudith?: boolean;
+}
+
+const { id, model, slugMap, seeds, minors, isJudith = false } = Astro.props;
+const judithId = seeds.judith;
+
+const slug = slugMap.get(id)!;
+const name = fullName(model, id);
+
+// --- Linked-name helper -----------------------------------------------------
+interface Link {
+  name: string;
+  href: string | null; // null = no page, render as plain text
+}
+const linkFor = (personId: string): Link => {
+  const hasPage = slugMap.has(personId);
+  let href: string | null = null;
+  if (hasPage) {
+    href = personId === judithId ? '/family/' : `/family/${slugMap.get(personId)}/`;
+  }
+  return { name: fullName(model, personId), href };
+};
+
+// --- Relatives (minors are never named — links built from non-minors only) --
+const isAdult = (personId: string) => !minors.has(personId);
+const { father, mother } = parentsOf(model, id);
+const fatherLink = father && isAdult(father) ? linkFor(father) : null;
+const motherLink = mother && isAdult(mother) ? linkFor(mother) : null;
+
+const siblingIds = siblingsOf(model, id);
+const siblingLinks = siblingIds.filter(isAdult).map(linkFor);
+const siblingMinors = siblingIds.length - siblingLinks.length;
+
+const childIds = childrenOf(model, id);
+const childLinks = childIds.filter(isAdult).map(linkFor);
+const childMinors = childIds.length - childLinks.length;
+
+const spouseLinks = spousesOf(model, id).filter(isAdult).map(linkFor);
+
+// "2 children" / "1 sibling" — privacy-safe count for hidden minors.
+const minorCount = (n: number, singular: string, plural: string) =>
+  `${n} ${n === 1 ? singular : plural}`;
+
+// --- Optional per-person metadata: src/assets/images/family/{slug}_metadata.json
+interface PersonMeta {
+  /** Hero crop height, e.g. "500px" or 500 (number → px). */
+  hero_image_height?: string | number;
+  /** Vertical focal point of the hero crop. */
+  hero_image_position?: 'top' | 'center' | 'bottom';
+  /** Fine-tune offset added to the focal point, e.g. "20%" or "-40px". */
+  hero_image_offset?: string;
+  /** External links (obituary, website, articles) shown above the photo album. */
+  links?: Array<{ title?: string; url?: string }>;
+}
+let meta: PersonMeta = {};
+try {
+  const metaPath = path.join(process.cwd(), 'src', 'assets', 'images', 'family', `${slug}_metadata.json`);
+  meta = JSON.parse(await fs.readFile(metaPath, 'utf-8'));
+} catch {
+  // No metadata file — use defaults.
+}
+
+// --- Hero image (glob the family image dir; jpeg/jpg/png/gif only) ----------
+const familyImages = import.meta.glob<{ default: ImageMetadata }>(
+  '/src/assets/images/family/*.{jpeg,jpg,png,gif}'
+);
+const heroKey = Object.keys(familyImages).find((p) => {
+  const file = p.split('/').pop() || '';
+  return new RegExp(`^${slug}_hero\\.(jpeg|jpg|png|gif)$`).test(file);
+});
+const heroPath = heroKey ? `images/family/${heroKey.split('/').pop()}` : null;
+
+const heroHeight =
+  meta.hero_image_height != null
+    ? typeof meta.hero_image_height === 'number'
+      ? `${meta.hero_image_height}px`
+      : meta.hero_image_height
+    : '400px';
+
+// Build the CSS object-position vertical from a keyword + optional offset.
+// A positive offset nudges the focal point AWAY from the anchored edge: for a
+// "top" anchor it moves the crop DOWN (i.e. "50px in from the top"), for a
+// "bottom" anchor it moves UP. Because object-fit:cover positive lengths shift
+// the image down (revealing higher content), "down" subtracts and "up" adds.
+function heroVertical(pos?: string, offset?: string): string {
+  const base = pos === 'top' ? '0%' : pos === 'bottom' ? '100%' : '50%';
+  if (offset) {
+    const o = String(offset).trim();
+    const negative = o.startsWith('-');
+    const mag = o.replace(/^[-+]/, '');
+    // bottom: away = up = add; top/center: away = down = subtract.
+    const op = pos === 'bottom' ? (negative ? '-' : '+') : negative ? '+' : '-';
+    return `calc(${base} ${op} ${mag})`;
+  }
+  return pos ?? 'center';
+}
+const heroPosition = `center ${heroVertical(meta.hero_image_position, meta.hero_image_offset)}`;
+
+// --- Birth / death line (only for deceased people; living people show none) -
+// All dates/places come from the GEDCOM. Deceased = GEDCOM death record or born
+// ≥100 years ago.
+const indi = model.individuals.get(id);
+const deceased = isLikelyDeceased(model, id, new Date());
+const bornDate = formatDisplayDate(indi?.birth?.date);
+const bornPlace = indi?.birth?.place ?? null;
+const diedDate = formatDisplayDate(indi?.death?.date);
+const diedPlace = indi?.death?.place ?? null;
+
+const lifeParts: string[] = [];
+if (deceased) {
+  if (bornDate) lifeParts.push(`born ${bornDate}${bornPlace ? ` ${bornPlace}` : ''}`);
+  if (diedDate) lifeParts.push(`died ${diedDate}${diedPlace ? ` ${diedPlace}` : ''}`);
+}
+const lifeLine = lifeParts.join('; ');
+
+// --- Description ------------------------------------------------------------
+// Prefer a markdown file ({slug}_desc.md, rendered to HTML), then a plain-text
+// file ({slug}_desc.txt), then the auto-generated relationship sentence.
+// `descHtml` is set for markdown; `description` holds plain text otherwise.
+const familyDir = path.join(process.cwd(), 'src', 'assets', 'images', 'family');
+let description: string | null = null;
+let descHtml: string | null = null;
+let descIsAuto = false;
+try {
+  const md = (await fs.readFile(path.join(familyDir, `${slug}_desc.md`), 'utf-8')).trim();
+  descHtml = await renderMarkdown(md);
+} catch {
+  try {
+    description = (await fs.readFile(path.join(familyDir, `${slug}_desc.txt`), 'utf-8')).trim();
+  } catch {
+    description = describeRelationship(model, id, seeds);
+    descIsAuto = true;
+  }
+}
+
+// --- Photo album (any image under family/{slug}_album/) ----------------------
+const familyAlbumImages = import.meta.glob(
+  '/src/assets/images/family/**/*.{jpeg,jpg,png,gif,webp}'
+);
+const albumPrefix = `/src/assets/images/family/${slug}_album/`;
+const hasAlbum = Object.keys(familyAlbumImages).some((p) => p.startsWith(albumPrefix));
+const albumDir = `family/${slug}_album`;
+
+// --- External links (metadata.links) ----------------------------------------
+const links = (Array.isArray(meta.links) ? meta.links : []).filter(
+  (l): l is { title: string; url: string } => Boolean(l && l.url && l.title)
+);
+---
+
+{/* Row: subtle back-link + parents */}
+<div class="fam-relatives">
+  <a class="fam-back" href="/family/">Family</a>
+  {!isJudith && <span class="fam-sep">›</span>}
+  {!isJudith && <span class="fam-here">{name}</span>}
+</div>
+
+<div class="fam-parents">
+  {motherLink &&
+    (motherLink.href ? (
+      <a class="fam-link" href={motherLink.href}>Mother: {motherLink.name}</a>
+    ) : (
+      <span class="fam-plain">Mother: {motherLink.name}</span>
+    ))}
+  {fatherLink &&
+    (fatherLink.href ? (
+      <a class="fam-link" href={fatherLink.href}>Father: {fatherLink.name}</a>
+    ) : (
+      <span class="fam-plain">Father: {fatherLink.name}</span>
+    ))}
+</div>
+
+<h1 class="fam-name">{name}</h1>
+{lifeLine && <p class="fam-life">{lifeLine}</p>}
+
+{/* Row: hero image */}
+{heroPath && <SectionHero hero={heroPath} heroHeight={heroHeight} heroPosition={heroPosition} alt={name} />}
+
+{/* Row: siblings (minors counted, not named) */}
+{(siblingLinks.length > 0 || siblingMinors > 0) && (
+  <p class="fam-row">
+    <span class="fam-row-label">Siblings:</span>{' '}
+    {siblingLinks.map((l, i) => (
+      <>
+        {i > 0 && ', '}
+        {l.href ? <a class="fam-link" href={l.href}>{l.name}</a> : <span class="fam-plain">{l.name}</span>}
+      </>
+    ))}
+    {siblingMinors > 0 && (
+      <>
+        {siblingLinks.length > 0 && ', '}
+        <span class="fam-plain">{minorCount(siblingMinors, 'sibling', 'siblings')}</span>
+      </>
+    )}
+  </p>
+)}
+
+{/* Row: children (minors counted, not named) */}
+{(childLinks.length > 0 || childMinors > 0) && (
+  <p class="fam-row">
+    <span class="fam-row-label">Children:</span>{' '}
+    {childLinks.map((l, i) => (
+      <>
+        {i > 0 && ', '}
+        {l.href ? <a class="fam-link" href={l.href}>{l.name}</a> : <span class="fam-plain">{l.name}</span>}
+      </>
+    ))}
+    {childMinors > 0 && (
+      <>
+        {childLinks.length > 0 && ', '}
+        <span class="fam-plain">{minorCount(childMinors, 'child', 'children')}</span>
+      </>
+    )}
+  </p>
+)}
+
+{/* Row: spouse(s) */}
+{spouseLinks.length > 0 && (
+  <p class="fam-row">
+    <span class="fam-row-label">{spouseLinks.length > 1 ? 'Spouses:' : 'Spouse:'}</span>{' '}
+    {spouseLinks.map((l, i) => (
+      <>
+        {i > 0 && ', '}
+        {l.href ? <a class="fam-link" href={l.href}>{l.name}</a> : <span class="fam-plain">{l.name}</span>}
+      </>
+    ))}
+  </p>
+)}
+
+{/* Row: description */}
+{descHtml && <div class="fam-desc fam-desc-md" set:html={descHtml} />}
+{description && <div class={descIsAuto ? 'fam-desc fam-desc-auto' : 'fam-desc'}>{description}</div>}
+
+{/* Row: external links (obituary, website, articles) */}
+{links.length > 0 && (
+  <ul class="fam-links">
+    {links.map((l) => (
+      <li>
+        <a class="fam-link-out" href={l.url} target="_blank" rel="noopener noreferrer">{l.title}</a>
+      </li>
+    ))}
+  </ul>
+)}
+
+{/* Row: photo album */}
+{hasAlbum && (
+  <>
+    <PhotoGrid albumDir={albumDir} />
+    <Lightbox />
+  </>
+)}

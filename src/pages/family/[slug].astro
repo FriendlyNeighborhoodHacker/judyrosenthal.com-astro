@@ -1,0 +1,23 @@
+---
+import ContentLayout from '../../layouts/ContentLayout.astro';
+import FamilyPerson from '../../components/FamilyPerson.astro';
+import { loadFamilyData, fullName } from '../../lib/gedcom';
+
+export async function getStaticPaths() {
+  const { slugMap, seeds } = await loadFamilyData();
+  return [...slugMap.entries()]
+    .filter(([id]) => id !== seeds.judith) // Judith lives at /family/
+    .map(([id, slug]) => ({
+      params: { slug },
+      props: { id },
+    }));
+}
+
+const { id } = Astro.props;
+const { model, slugMap, seeds, minors } = await loadFamilyData();
+const title = fullName(model, id);
+---
+
+<ContentLayout title={title} showBreadcrumbs={false}>
+  <FamilyPerson id={id} model={model} slugMap={slugMap} seeds={seeds} minors={minors} />
+</ContentLayout>

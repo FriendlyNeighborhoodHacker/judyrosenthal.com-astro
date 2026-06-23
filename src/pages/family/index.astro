@@ -1,0 +1,11 @@
+---
+import ContentLayout from '../../layouts/ContentLayout.astro';
+import FamilyPerson from '../../components/FamilyPerson.astro';
+import { loadFamilyData } from '../../lib/gedcom';
+
+const { model, slugMap, seeds, minors } = await loadFamilyData();
+---
+
+<ContentLayout title="Family" showBreadcrumbs={false}>
+  <FamilyPerson id={seeds.judith} model={model} slugMap={slugMap} seeds={seeds} minors={minors} isJudith={true} />
+</ContentLayout>

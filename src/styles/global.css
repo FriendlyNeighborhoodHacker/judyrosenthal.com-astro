@@ -1126,3 +1126,88 @@ a {
     font-size: 0.72rem;
   }
 }
+
+/* ===== FAMILY / GENEALOGY ===== */
+.fam-relatives {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.82rem;
+  color: #999;
+  margin-bottom: 0.75rem;
+}
+.fam-relatives .fam-back {
+  color: #999;
+  text-decoration: none;
+  border-bottom: 1px dotted #ccc;
+}
+.fam-relatives .fam-back:hover { color: #222; border-bottom-color: #222; }
+.fam-relatives .fam-sep { color: #bbb; }
+.fam-relatives .fam-here { color: #666; }
+
+.fam-parents {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  font-size: 0.85rem;
+  margin-bottom: 0.5rem;
+}
+
+.fam-name {
+  font-size: 2rem;
+  margin: 0.25rem 0 1rem;
+}
+
+.fam-row {
+  font-size: 0.9rem;
+  color: #666;
+  margin: 0.4rem 0;
+}
+.fam-row-label { color: #999; }
+
+.fam-link {
+  color: #777;
+  text-decoration: none;
+  border-bottom: 1px dotted #bbb;
+}
+.fam-link:hover { color: #222; border-bottom-color: #222; }
+.fam-plain { color: #666; }
+
+.fam-desc {
+  font-size: 1.05rem;
+  line-height: 1.6;
+  margin: 1.25rem 0;
+  white-space: pre-line;
+}
+.fam-desc-auto { color: #555; font-style: italic; }
+
+/* Markdown-rendered family descriptions (block elements, not pre-line text). */
+.fam-desc-md { white-space: normal; }
+.fam-desc-md > :first-child { margin-top: 0; }
+.fam-desc-md > :last-child { margin-bottom: 0; }
+.fam-desc-md p { margin: 0 0 1rem; }
+.fam-desc-md ul,
+.fam-desc-md ol { margin: 0 0 1rem; padding-left: 1.5rem; }
+.fam-desc-md a { color: #777; text-decoration: underline; }
+.fam-desc-md a:hover { color: #222; }
+
+/* Birth/death line under a family member's name (deceased only). */
+.fam-life {
+  font-size: 0.9rem;
+  color: #777;
+  margin: -0.5rem 0 1rem;
+}
+
+/* External links (obituary, website, articles) above a family photo album. */
+.fam-links {
+  list-style: none;
+  padding: 0;
+  margin: 1.5rem 0;
+}
+.fam-links li { margin: 0.3rem 0; }
+.fam-link-out {
+  color: #777;
+  text-decoration: none;
+  border-bottom: 1px dotted #bbb;
+}
+.fam-link-out:hover { color: #222; border-bottom-color: #222; }
