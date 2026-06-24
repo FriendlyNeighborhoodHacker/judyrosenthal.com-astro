@@ -209,6 +209,27 @@ export function fullName(model: GedcomModel, id: string): string {
   return model.individuals.get(id)?.fullName ?? 'Unknown';
 }
 
+/** Full name with middle name(s) dropped — keeps the first given name + surname (+ suffix). */
+function shortName(indi: Individual): string {
+  const given = indi.given;
+  if (!given) return indi.fullName;
+  const firstGiven = given.split(/\s+/)[0];
+  if (firstGiven === given) return indi.fullName; // single given token, nothing to drop
+  // fullName always starts with the full `given`; replace it with just the first name.
+  return (firstGiven + indi.fullName.slice(given.length)).trim();
+}
+
+/**
+ * Name to display. Deceased people (a death record, or born ≥100 years ago)
+ * show their full name including middle name(s); living people show only their
+ * first name + surname for privacy.
+ */
+export function displayName(model: GedcomModel, id: string, now: Date): string {
+  const indi = model.individuals.get(id);
+  if (!indi) return 'Unknown';
+  return isLikelyDeceased(model, id, now) ? indi.fullName : shortName(indi);
+}
+
 export function sexOf(model: GedcomModel, id: string): 'M' | 'F' | undefined {
   return model.individuals.get(id)?.sex;
 }
@@ -608,10 +629,10 @@ function connectorFor(term: string): string {
  * site shows: P is a blood relative of A, P is A's spouse, or P is the spouse
  * of a blood relative of A. Returns the full sentence, or null if none apply.
  */
-function relationshipToAnchor(model: GedcomModel, p: string, anchor: string): string | null {
+function relationshipToAnchor(model: GedcomModel, p: string, anchor: string, now: Date): string | null {
   if (p === anchor) return null;
-  const pName = fullName(model, p);
-  const aName = fullName(model, anchor);
+  const pName = displayName(model, p, now);
+  const aName = displayName(model, anchor, now);
   const sex = sexOf(model, p);
 
   // (a) P is a blood relative of the anchor.
@@ -644,10 +665,11 @@ function relationshipToAnchor(model: GedcomModel, p: string, anchor: string): st
 export function describeRelationship(
   model: GedcomModel,
   p: string,
-  seeds: { judith: string; haskell: string; eugenie: string }
+  seeds: { judith: string; haskell: string; eugenie: string },
+  now: Date
 ): string | null {
   for (const anchor of [seeds.judith, seeds.eugenie, seeds.haskell]) {
-    const sentence = relationshipToAnchor(model, p, anchor);
+    const sentence = relationshipToAnchor(model, p, anchor, now);
     if (sentence) return sentence;
   }
   return null;

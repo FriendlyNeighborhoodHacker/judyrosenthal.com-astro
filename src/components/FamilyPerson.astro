@@ -6,7 +6,7 @@ import PhotoGrid from './PhotoGrid.astro';
 import Lightbox from './Lightbox.astro';
 import {
   type GedcomModel,
-  fullName,
+  displayName,
   parentsOf,
   siblingsOf,
   childrenOf,
@@ -31,8 +31,11 @@ interface Props {
 const { id, model, slugMap, seeds, minors, isJudith = false } = Astro.props;
 const judithId = seeds.judith;
 
+// Single "now" for all display decisions (deceased status, name, dates).
+const now = new Date();
+
 const slug = slugMap.get(id)!;
-const name = fullName(model, id);
+const name = displayName(model, id, now);
 
 // --- Linked-name helper -----------------------------------------------------
 interface Link {
@@ -45,7 +48,7 @@ const linkFor = (personId: string): Link => {
   if (hasPage) {
     href = personId === judithId ? '/family/' : `/family/${slugMap.get(personId)}/`;
   }
-  return { name: fullName(model, personId), href };
+  return { name: displayName(model, personId, now), href };
 };
 
 // --- Relatives (minors are never named — links built from non-minors only) --
@@ -110,7 +113,7 @@ const heroPosition = heroObjectPosition(meta.hero_image_position, meta.hero_imag
 // All dates/places come from the GEDCOM. Deceased = GEDCOM death record or born
 // ≥100 years ago.
 const indi = model.individuals.get(id);
-const deceased = isLikelyDeceased(model, id, new Date());
+const deceased = isLikelyDeceased(model, id, now);
 const bornDate = formatDisplayDate(indi?.birth?.date);
 const bornPlace = indi?.birth?.place ?? null;
 const diedDate = formatDisplayDate(indi?.death?.date);
@@ -138,7 +141,7 @@ try {
   try {
     description = (await fs.readFile(path.join(familyDir, `${slug}_desc.txt`), 'utf-8')).trim();
   } catch {
-    description = describeRelationship(model, id, seeds);
+    description = describeRelationship(model, id, seeds, now);
     descIsAuto = true;
   }
 }

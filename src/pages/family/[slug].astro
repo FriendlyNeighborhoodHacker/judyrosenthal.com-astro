@@ -1,7 +1,7 @@
 ---
 import ContentLayout from '../../layouts/ContentLayout.astro';
 import FamilyPerson from '../../components/FamilyPerson.astro';
-import { loadFamilyData, fullName } from '../../lib/gedcom';
+import { loadFamilyData, displayName } from '../../lib/gedcom';
 
 export async function getStaticPaths() {
   const { slugMap, seeds } = await loadFamilyData();
@@ -15,7 +15,7 @@ export async function getStaticPaths() {
 
 const { id } = Astro.props;
 const { model, slugMap, seeds, minors } = await loadFamilyData();
-const title = fullName(model, id);
+const title = displayName(model, id, new Date());
 ---
 
 <ContentLayout title={title} showBreadcrumbs={false} personSlug={slugMap.get(id)}>
