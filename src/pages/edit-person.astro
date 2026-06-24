@@ -163,8 +163,8 @@ const init = {
         {/* E. Photo album */}
         <section class="ep-card">
           <h2>Photo album</h2>
-          <p class="ep-hint"><span id="album-count"></span> · <a id="manage-link" href="#" target="_blank" rel="noopener">Reorder / caption / delete ↗</a></p>
-          <div id="album-thumbs" class="ep-thumbs"></div>
+          <p class="ep-hint"><span id="album-count"></span> · <a id="manage-link" href="#" target="_blank" rel="noopener">Reorder / caption / delete ↗</a><br />Hover a photo and click <strong>Set as hero</strong> to use it as the hero image.</p>
+          <div id="album-thumbs" class="photo-grid ep-album-grid"></div>
           <label class="ep-upload">Add photos<input id="album-input" type="file" accept="image/*" multiple /></label>
           <button type="button" id="upload-album">Upload to album</button>
         </section>
@@ -205,9 +205,21 @@ const init = {
   .ep-drop.drag { border-color: #1a5; background: #f3fbf5; }
   .ep-hero-frame { width: 100%; max-width: 1000px; height: 400px; overflow: hidden; border-radius: 8px; margin: 0 auto 0.75rem; background: #f0f0f0; }
   #hero-preview { width: 100%; height: 100%; object-fit: cover; object-position: center; display: block; }
-  .ep-thumbs { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.75rem; }
-  .ep-thumbs img { width: 84px; height: 84px; object-fit: cover; border-radius: 6px; background: #f0f0f0; }
   .ep-upload { flex-direction: row; align-items: center; gap: 0.5rem; font-weight: 400; margin-bottom: 0.75rem; }
+</style>
+
+<!-- Global so the JS-created album grid (which lacks Astro's scope attribute) is styled. -->
+<style is:global>
+  .ep-album-grid { margin-top: 0.5rem; margin-bottom: 0.75rem; }
+  .ep-album-grid .ep-album-item { position: relative; }
+  .ep-album-grid .ep-set-hero {
+    position: absolute; left: 50%; bottom: 6px; transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.72); color: #fff; border: none; border-radius: 4px;
+    font-size: 0.72rem; padding: 0.25rem 0.55rem; cursor: pointer; white-space: nowrap;
+    opacity: 0; transition: opacity 0.15s; margin: 0;
+  }
+  .ep-album-grid .ep-album-item:hover .ep-set-hero { opacity: 1; }
+  .ep-album-grid .ep-set-hero:hover { background: rgba(26, 127, 55, 0.9); }
 </style>
 
 <script>
@@ -365,14 +377,35 @@ const init = {
     manageLink.href = `/manage-photos?album=${encodeURIComponent(init.albumDir)}&page=${encodeURIComponent('/family/' + (init.slug ? init.slug + '/' : ''))}`;
     const countEl = document.getElementById('album-count') as HTMLElement;
     const thumbs = document.getElementById('album-thumbs') as HTMLElement;
+
+    async function setHeroFromAlbum(file: string) {
+      setStatus('Setting hero…');
+      try {
+        const data = await postJSON('/api/family/hero-from-album', { slug: init.slug, file });
+        showHero(data.filename);
+        setStatus('Hero set ✓ (reload the page to see it)', 'ok');
+      } catch (e) { setStatus(String(e), 'err'); }
+    }
+
     function renderAlbum(photos: { filename: string }[]) {
       countEl.textContent = `${photos.length} photo(s)`;
       thumbs.innerHTML = '';
       photos.forEach((p) => {
+        const item = document.createElement('div');
+        item.className = 'photo-grid-item ep-album-item';
+
         const img = document.createElement('img');
         img.loading = 'lazy';
         img.src = `/api/photos/thumb?album=${encodeURIComponent(init.albumDir)}&file=${encodeURIComponent(p.filename)}`;
-        thumbs.appendChild(img);
+
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'ep-set-hero';
+        btn.textContent = 'Set as hero';
+        btn.addEventListener('click', () => setHeroFromAlbum(p.filename));
+
+        item.append(img, btn);
+        thumbs.appendChild(item);
       });
     }
     renderAlbum(init.photos || []);

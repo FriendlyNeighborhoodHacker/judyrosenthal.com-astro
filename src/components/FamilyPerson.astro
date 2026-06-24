@@ -177,6 +177,23 @@ const links = (Array.isArray(meta.links) ? meta.links : []).filter(
     ) : (
       <span class="fam-plain">Father: {fatherLink.name}</span>
     ))}
+  {spouseLinks.length === 1 &&
+    (spouseLinks[0].href ? (
+      <a class="fam-link" href={spouseLinks[0].href}>Spouse: {spouseLinks[0].name}</a>
+    ) : (
+      <span class="fam-plain">Spouse: {spouseLinks[0].name}</span>
+    ))}
+  {spouseLinks.length > 1 && (
+    <span class="fam-plain">
+      Spouses:{' '}
+      {spouseLinks.map((l, i) => (
+        <>
+          {i > 0 && ', '}
+          {l.href ? <a class="fam-link" href={l.href}>{l.name}</a> : <span class="fam-plain">{l.name}</span>}
+        </>
+      ))}
+    </span>
+  )}
 </div>
 
 <h1 class="fam-name">{name}</h1>
@@ -220,19 +237,6 @@ const links = (Array.isArray(meta.links) ? meta.links : []).filter(
         <span class="fam-plain">{minorCount(childMinors, 'child', 'children')}</span>
       </>
     )}
-  </p>
-)}
-
-{/* Row: spouse(s) */}
-{spouseLinks.length > 0 && (
-  <p class="fam-row">
-    <span class="fam-row-label">{spouseLinks.length > 1 ? 'Spouses:' : 'Spouse:'}</span>{' '}
-    {spouseLinks.map((l, i) => (
-      <>
-        {i > 0 && ', '}
-        {l.href ? <a class="fam-link" href={l.href}>{l.name}</a> : <span class="fam-plain">{l.name}</span>}
-      </>
-    ))}
   </p>
 )}
 
