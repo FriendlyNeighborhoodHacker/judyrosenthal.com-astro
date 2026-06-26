@@ -199,7 +199,7 @@ a {
 .content-body {
   max-width: 900px;
   margin: 0 auto;
-  padding: 30px 32px;
+  padding: 15px 22px;
   font-size: 1rem;
   line-height: 1.75;
   color: #222;
@@ -211,6 +211,10 @@ a {
   letter-spacing: 0.1em;
   text-transform: uppercase;
   margin-bottom: 1.5rem;
+}
+
+h1.fam-name {
+  margin-bottom: 8px;
 }
 
 .content-body p {
@@ -1154,30 +1158,16 @@ a {
 }
 
 /* ===== FAMILY / GENEALOGY ===== */
-.fam-relatives {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 0.82rem;
-  color: #999;
-  margin-bottom: 0.75rem;
-}
-.fam-relatives .fam-back {
-  color: #999;
-  text-decoration: none;
-  border-bottom: 1px dotted #ccc;
-}
-.fam-relatives .fam-back:hover { color: #222; border-bottom-color: #222; }
-.fam-relatives .fam-sep { color: #bbb; }
-.fam-relatives .fam-here { color: #666; }
-
 .fam-parents {
   display: flex;
   flex-wrap: wrap;
-  gap: 1.5rem;
+  gap: 0rem 1rem;
   font-size: 0.85rem;
   margin-bottom: 0.5rem;
 }
+/* Each relationship (Mother / Father / Spouse / Siblings / Children) stays
+   together as one item within the combined relatives row. */
+.fam-rel-group { white-space: normal; }
 
 .fam-name {
   font-size: 2rem;
@@ -1205,7 +1195,14 @@ a {
   margin: 1.25rem 0;
   white-space: pre-line;
 }
-.fam-desc-auto { color: #555; font-style: italic; }
+
+/* Relationship-to-Judith sentence (its own row, above the photo). */
+.fam-relationship {
+  font-size: 0.95rem;
+  color: #555;
+  font-style: italic;
+  margin: 0 0 1.25rem;
+}
 
 /* Markdown-rendered family descriptions (block elements, not pre-line text). */
 .fam-desc-md { white-space: normal; }
@@ -1218,10 +1215,11 @@ a {
 .fam-desc-md a:hover { color: #222; }
 
 /* Birth/death line under a family member's name (deceased only). */
-.fam-life {
+p.fam-life {
   font-size: 0.9rem;
   color: #777;
-  margin: -0.5rem 0 1rem;
+  margin: -0.5rem 0 0rem;
+  padding-bottom: 0px;
 }
 
 /* External links (obituary, website, articles) above a family photo album. */

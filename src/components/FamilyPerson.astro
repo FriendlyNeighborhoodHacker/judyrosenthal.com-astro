@@ -28,7 +28,7 @@ interface Props {
   isJudith?: boolean;
 }
 
-const { id, model, slugMap, seeds, minors, isJudith = false } = Astro.props;
+const { id, model, slugMap, seeds, minors } = Astro.props;
 const judithId = seeds.judith;
 
 // Single "now" for all display decisions (deceased status, name, dates).
@@ -134,9 +134,15 @@ const lifeLine = lifeParts.join('; ');
 // file ({slug}_desc.txt), then the auto-generated relationship sentence.
 // `descHtml` is set for markdown; `description` holds plain text otherwise.
 const familyDir = path.join(process.cwd(), 'src', 'assets', 'images', 'family');
+
+// Relationship-to-Judith sentence — now shown as its own row (when present),
+// no longer just a fallback for a missing description.
+const relationship = describeRelationship(model, id, seeds, now);
+
+// Optional human-written description ({slug}_desc.md preferred, then .txt).
+// No auto fallback: the relationship sentence above covers that separately.
 let description: string | null = null;
 let descHtml: string | null = null;
-let descIsAuto = false;
 try {
   const md = (await fs.readFile(path.join(familyDir, `${slug}_desc.md`), 'utf-8')).trim();
   descHtml = await renderMarkdown(md);
@@ -144,8 +150,7 @@ try {
   try {
     description = (await fs.readFile(path.join(familyDir, `${slug}_desc.txt`), 'utf-8')).trim();
   } catch {
-    description = describeRelationship(model, id, seeds, now);
-    descIsAuto = true;
+    // No description file — leave both null.
   }
 }
 
@@ -163,35 +168,29 @@ const links = (Array.isArray(meta.links) ? meta.links : []).filter(
 );
 ---
 
-{/* Row: subtle back-link + parents */}
-<div class="fam-relatives">
-  <a class="fam-back" href="/family/">Family</a>
-  {!isJudith && <span class="fam-sep">›</span>}
-  {!isJudith && <span class="fam-here">{name}</span>}
-</div>
-
+{/* Row 1: all relatives — mother, father, spouse, siblings, children */}
 <div class="fam-parents">
-  {motherLink &&
-    (motherLink.href ? (
-      <a class="fam-link" href={motherLink.href}>Mother: {motherLink.name}</a>
-    ) : (
-      <span class="fam-plain">Mother: {motherLink.name}</span>
-    ))}
-  {fatherLink &&
-    (fatherLink.href ? (
-      <a class="fam-link" href={fatherLink.href}>Father: {fatherLink.name}</a>
-    ) : (
-      <span class="fam-plain">Father: {fatherLink.name}</span>
-    ))}
-  {spouseLinks.length === 1 &&
-    (spouseLinks[0].href ? (
-      <a class="fam-link" href={spouseLinks[0].href}>Spouse: {spouseLinks[0].name}</a>
-    ) : (
-      <span class="fam-plain">Spouse: {spouseLinks[0].name}</span>
-    ))}
+  {motherLink && (
+    <span class="fam-rel-group">
+      <span class="fam-row-label">Mother:</span>{' '}
+      {motherLink.href ? <a class="fam-link" href={motherLink.href}>{motherLink.name}</a> : <span class="fam-plain">{motherLink.name}</span>}
+    </span>
+  )}
+  {fatherLink && (
+    <span class="fam-rel-group">
+      <span class="fam-row-label">Father:</span>{' '}
+      {fatherLink.href ? <a class="fam-link" href={fatherLink.href}>{fatherLink.name}</a> : <span class="fam-plain">{fatherLink.name}</span>}
+    </span>
+  )}
+  {spouseLinks.length === 1 && (
+    <span class="fam-rel-group">
+      <span class="fam-row-label">Spouse:</span>{' '}
+      {spouseLinks[0].href ? <a class="fam-link" href={spouseLinks[0].href}>{spouseLinks[0].name}</a> : <span class="fam-plain">{spouseLinks[0].name}</span>}
+    </span>
+  )}
   {spouseLinks.length > 1 && (
-    <span class="fam-plain">
-      Spouses:{' '}
+    <span class="fam-rel-group">
+      <span class="fam-row-label">Spouses:</span>{' '}
       {spouseLinks.map((l, i) => (
         <>
           {i > 0 && ', '}
@@ -200,55 +199,57 @@ const links = (Array.isArray(meta.links) ? meta.links : []).filter(
       ))}
     </span>
   )}
+  {(siblingLinks.length > 0 || siblingMinors > 0) && (
+    <span class="fam-rel-group">
+      <span class="fam-row-label">Siblings:</span>{' '}
+      {siblingLinks.map((l, i) => (
+        <>
+          {i > 0 && ', '}
+          {l.href ? <a class="fam-link" href={l.href}>{l.name}</a> : <span class="fam-plain">{l.name}</span>}
+        </>
+      ))}
+      {siblingMinors > 0 && (
+        <>
+          {siblingLinks.length > 0 && ', '}
+          <span class="fam-plain">{minorCount(siblingMinors, 'sibling', 'siblings')}</span>
+        </>
+      )}
+    </span>
+  )}
+  {(childLinks.length > 0 || childMinors > 0) && (
+    <span class="fam-rel-group">
+      <span class="fam-row-label">Children:</span>{' '}
+      {childLinks.map((l, i) => (
+        <>
+          {i > 0 && ', '}
+          {l.href ? <a class="fam-link" href={l.href}>{l.name}</a> : <span class="fam-plain">{l.name}</span>}
+        </>
+      ))}
+      {childMinors > 0 && (
+        <>
+          {childLinks.length > 0 && ', '}
+          <span class="fam-plain">{minorCount(childMinors, 'child', 'children')}</span>
+        </>
+      )}
+    </span>
+  )}
 </div>
 
+{/* Row 2: name */}
 <h1 class="fam-name">{name}</h1>
+
+{/* Row 3: birth / death line (deceased only) */}
 {lifeLine && <p class="fam-life">{lifeLine}</p>}
 
-{/* Row: hero image */}
+{/* Row 4: relationship-to-Judith sentence */}
+{relationship && <p class="fam-relationship">{relationship}</p>}
+
+{/* Row 5: hero image */}
 {heroPath && <SectionHero hero={heroPath} heroHeight={heroHeight} heroPosition={heroPosition} alt={name} />}
 
-{/* Row: siblings (minors counted, not named) */}
-{(siblingLinks.length > 0 || siblingMinors > 0) && (
-  <p class="fam-row">
-    <span class="fam-row-label">Siblings:</span>{' '}
-    {siblingLinks.map((l, i) => (
-      <>
-        {i > 0 && ', '}
-        {l.href ? <a class="fam-link" href={l.href}>{l.name}</a> : <span class="fam-plain">{l.name}</span>}
-      </>
-    ))}
-    {siblingMinors > 0 && (
-      <>
-        {siblingLinks.length > 0 && ', '}
-        <span class="fam-plain">{minorCount(siblingMinors, 'sibling', 'siblings')}</span>
-      </>
-    )}
-  </p>
-)}
-
-{/* Row: children (minors counted, not named) */}
-{(childLinks.length > 0 || childMinors > 0) && (
-  <p class="fam-row">
-    <span class="fam-row-label">Children:</span>{' '}
-    {childLinks.map((l, i) => (
-      <>
-        {i > 0 && ', '}
-        {l.href ? <a class="fam-link" href={l.href}>{l.name}</a> : <span class="fam-plain">{l.name}</span>}
-      </>
-    ))}
-    {childMinors > 0 && (
-      <>
-        {childLinks.length > 0 && ', '}
-        <span class="fam-plain">{minorCount(childMinors, 'child', 'children')}</span>
-      </>
-    )}
-  </p>
-)}
-
-{/* Row: description */}
+{/* Row 6: description (only when a desc file exists) */}
 {descHtml && <div class="fam-desc fam-desc-md" set:html={descHtml} />}
-{description && <div class={descIsAuto ? 'fam-desc fam-desc-auto' : 'fam-desc'}>{description}</div>}
+{description && <div class="fam-desc">{description}</div>}
 
 {/* Row: external links (obituary, website, articles) */}
 {links.length > 0 && (
