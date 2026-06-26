@@ -36,7 +36,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
   }
 
   cookies.set(COOKIE_NAME, token, SESSION_COOKIE_OPTIONS);
-  return new Response(JSON.stringify({ ok: true }), {
+  return new Response(JSON.stringify({ ok: true, username }), {
     headers: { 'Content-Type': 'application/json' },
   });
 };

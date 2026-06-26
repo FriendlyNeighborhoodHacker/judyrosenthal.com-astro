@@ -1,0 +1,28 @@
+{
+  "order": [
+    "article.png",
+    "carter.jpeg",
+    "governor_hawaii.jpeg",
+    "here_she_is.jpeg",
+    "IMG_3141.jpeg",
+    "johnson.jpeg",
+    "johnson2.jpeg",
+    "northeastern_university.jpeg",
+    "painting_with_brian.png",
+    "peabody_museum.jpeg",
+    "rice.jpeg"
+  ],
+  "descriptions": {
+    "article.png": "In the news",
+    "carter.jpeg": "Letter from Jimmy Carter",
+    "governor_hawaii.jpeg": "Letter from the governor of Hawaii",
+    "here_she_is.jpeg": "In the news again",
+    "IMG_3141.jpeg": "Letter from Port of Houston Museum",
+    "johnson.jpeg": "Letter from LBJ",
+    "johnson2.jpeg": "Another letter from LBJ",
+    "northeastern_university.jpeg": "Letter fro Northeastern University",
+    "painting_with_brian.png": "Painting with Brian",
+    "peabody_museum.jpeg": "Letter from Peabody Museum",
+    "rice.jpeg": "Letter from Fondren Library at Rice"
+  }
+}

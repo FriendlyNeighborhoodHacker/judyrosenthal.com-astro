@@ -1,0 +1,24 @@
+{
+  "order": [
+    "Dreidel p.11.jpg",
+    "dreidel.png",
+    "flutter.jpg",
+    "lilly_trip.png",
+    "spots_and_sparky_cover.png",
+    "Image036.jpg",
+    "Image029 copy.jpg",
+    "Image031 copy.jpg",
+    "Image033.jpg"
+  ],
+  "descriptions": {
+    "Dreidel p.11.jpg": "From the Dreidel Book",
+    "dreidel.png": "From the Dreidel Book",
+    "flutter.jpg": "Flutter Cover",
+    "lilly_trip.png": "Lilly's Trip to the Lands of Adventure",
+    "spots_and_sparky_cover.png": "Spots and Sparky",
+    "Image036.jpg": "A drawing from Judy's childhood",
+    "Image029 copy.jpg": "A drawing from Judy's childhood",
+    "Image031 copy.jpg": "A drawing from Judy's childhood",
+    "Image033.jpg": "A drawing from Judy's childhood"
+  }
+}

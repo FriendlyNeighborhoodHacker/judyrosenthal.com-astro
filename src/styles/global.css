@@ -560,6 +560,15 @@ a {
   z-index: 1000;
 }
 
+.dev-tools-group {
+  display: flex;
+  gap: 12px;
+}
+
+.dev-tools-group[hidden] {
+  display: none;
+}
+
 .dev-tools a,
 .dev-tools button {
   background: rgba(0, 0, 0, 0.7);

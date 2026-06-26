@@ -4,7 +4,6 @@ import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
 import Breadcrumbs from '../components/Breadcrumbs.astro';
 import SectionHero from '../components/SectionHero.astro';
-import { getSessionUser } from '../lib/auth';
 
 interface Props {
   frontmatter?: {
@@ -33,9 +32,6 @@ const albumDir = frontmatter?.albumDir;
 const isCollection = frontmatter?.collection ?? false;
 const pageTitle = `${title} | Judy Rosenthal`;
 const bodyClass = isCollection ? 'page-content page-collection' : 'page-content';
-
-// DEV-only: who (if anyone) is logged in to the editing tools.
-const editUser = import.meta.env.DEV ? await getSessionUser(Astro.cookies) : null;
 ---
 
 <BaseLayout title={pageTitle} bodyClass={bodyClass}>
@@ -52,21 +48,26 @@ const editUser = import.meta.env.DEV ? await getSessionUser(Astro.cookies) : nul
   
   {import.meta.env.DEV && (
     <div class="dev-tools">
-      {editUser ? (
-        <>
-          {personSlug ? (
-            <a href={`/edit-person?slug=${personSlug}`}>👤 Edit Person</a>
-          ) : (
-            <>
-              <a href={`/edit?page=${Astro.url.pathname}`}>✏️ Edit Content</a>
-              {albumDir && <a href={`/manage-photos?album=${albumDir}&page=${Astro.url.pathname}`}>📸 Manage Photos</a>}
-            </>
-          )}
-          <button type="button" id="dev-logout" title={`Logged in as ${editUser}`}>🚪 Log out</button>
-        </>
-      ) : (
-        <a href={`/login?next=${encodeURIComponent(Astro.url.pathname)}`}>🔒 Log in</a>
-      )}
+      {/* Both states are rendered server-side, then revealed by the script below
+          based on the login state (read client-side, since content pages are
+          prerendered and can't read cookies in their frontmatter). */}
+      <div id="dev-tools-authed" class="dev-tools-group" hidden>
+        {personSlug ? (
+          <a href={`/edit-person?slug=${personSlug}`}>👤 Edit Person</a>
+        ) : (
+          <>
+            <a href={`/edit?page=${Astro.url.pathname}`}>✏️ Edit Content</a>
+            {albumDir && <a href={`/manage-photos?album=${albumDir}&page=${Astro.url.pathname}`}>📸 Manage Photos</a>}
+          </>
+        )}
+        <button type="button" id="dev-logout">🚪 Log out</button>
+      </div>
+      <a
+        id="dev-tools-login"
+        class="dev-tools-group"
+        href={`/login?next=${encodeURIComponent(Astro.url.pathname)}`}
+        hidden
+      >🔒 Log in</a>
     </div>
   )}
 
@@ -76,6 +77,24 @@ const editUser = import.meta.env.DEV ? await getSessionUser(Astro.cookies) : nul
         await fetch('/api/auth/logout', { method: 'POST' });
         window.location.reload();
       });
+
+      // Ask the server who's logged in (reads the httpOnly session cookie, which
+      // prerendered pages can't see in their own frontmatter), then reveal the
+      // matching toolbar state.
+      fetch('/api/auth/me')
+        .then((r) => r.json())
+        .then((data) => {
+          if (data && data.user) {
+            document.getElementById('dev-tools-authed')?.removeAttribute('hidden');
+            const btn = document.getElementById('dev-logout');
+            if (btn) btn.title = 'Logged in as ' + data.user;
+          } else {
+            document.getElementById('dev-tools-login')?.removeAttribute('hidden');
+          }
+        })
+        .catch(() => {
+          document.getElementById('dev-tools-login')?.removeAttribute('hidden');
+        });
     </script>
   )}
 </BaseLayout>
