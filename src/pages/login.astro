@@ -1,0 +1,109 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { getSessionUser } from '../lib/auth';
+
+export const prerender = false;
+
+// DEV-ONLY page. In production this redirects home (and never gets built).
+if (!import.meta.env.DEV) {
+  return Astro.redirect('/');
+}
+
+// Only allow same-site relative paths as the post-login destination.
+const rawNext = Astro.url.searchParams.get('next') ?? '/';
+const next = rawNext.startsWith('/') && !rawNext.startsWith('//') ? rawNext : '/';
+
+// Already logged in? Skip the form.
+if (await getSessionUser(Astro.cookies)) {
+  return Astro.redirect(next);
+}
+---
+
+<BaseLayout title="Log in" bodyClass="page-login">
+  <main class="login">
+    <h1>Log in to edit</h1>
+    <p class="login-hint">Editing tools are locked. Sign in to continue.</p>
+
+    <p id="login-status" class="login-status" role="status"></p>
+
+    <form id="login-form">
+      <label class="field">
+        <span>Username</span>
+        <input id="username" name="username" type="text" autocomplete="username" autofocus required />
+      </label>
+      <label class="field">
+        <span>Password</span>
+        <input id="password" name="password" type="password" autocomplete="current-password" required />
+      </label>
+      <input id="next" type="hidden" value={next} />
+      <div class="login-actions">
+        <button type="submit" id="login-btn">Log in</button>
+      </div>
+    </form>
+  </main>
+</BaseLayout>
+
+<style>
+  .login {
+    max-width: 360px;
+    margin: 4rem auto;
+    padding: 0 1.5rem;
+    font-family: system-ui, sans-serif;
+  }
+  .login h1 { margin: 0 0 0.25rem; font-size: 1.4rem; }
+  .login-hint { color: #555; font-size: 0.9rem; margin: 0 0 1.25rem; }
+  .login-status { min-height: 1.2rem; font-size: 0.9rem; }
+  .login-status.err { color: #c0392b; }
+  .field { display: block; margin-bottom: 1rem; }
+  .field > span { display: block; font-weight: 600; margin-bottom: 0.4rem; font-size: 0.9rem; }
+  input[type='text'],
+  input[type='password'] {
+    width: 100%;
+    font-size: 1rem;
+    padding: 0.6rem 0.7rem;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    box-sizing: border-box;
+  }
+  .login-actions { margin-top: 1.25rem; }
+  button {
+    padding: 0.6rem 1.4rem;
+    border: none;
+    border-radius: 6px;
+    background: #1a5;
+    color: white;
+    font-size: 0.95rem;
+    cursor: pointer;
+  }
+  button:disabled { opacity: 0.6; cursor: default; }
+</style>
+
+<script>
+  const form = document.getElementById('login-form') as HTMLFormElement;
+  const usernameEl = document.getElementById('username') as HTMLInputElement;
+  const passwordEl = document.getElementById('password') as HTMLInputElement;
+  const nextEl = document.getElementById('next') as HTMLInputElement;
+  const statusEl = document.getElementById('login-status') as HTMLElement;
+  const btn = document.getElementById('login-btn') as HTMLButtonElement;
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    btn.disabled = true;
+    statusEl.textContent = 'Signing in…';
+    statusEl.className = 'login-status';
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: usernameEl.value, password: passwordEl.value }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Login failed');
+      window.location.href = nextEl.value || '/';
+    } catch (err) {
+      statusEl.textContent = String(err instanceof Error ? err.message : err);
+      statusEl.className = 'login-status err';
+      btn.disabled = false;
+    }
+  });
+</script>

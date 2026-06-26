@@ -4,6 +4,7 @@ import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
 import Breadcrumbs from '../components/Breadcrumbs.astro';
 import SectionHero from '../components/SectionHero.astro';
+import { getSessionUser } from '../lib/auth';
 
 interface Props {
   frontmatter?: {
@@ -32,6 +33,9 @@ const albumDir = frontmatter?.albumDir;
 const isCollection = frontmatter?.collection ?? false;
 const pageTitle = `${title} | Judy Rosenthal`;
 const bodyClass = isCollection ? 'page-content page-collection' : 'page-content';
+
+// DEV-only: who (if anyone) is logged in to the editing tools.
+const editUser = import.meta.env.DEV ? await getSessionUser(Astro.cookies) : null;
 ---
 
 <BaseLayout title={pageTitle} bodyClass={bodyClass}>
@@ -48,14 +52,30 @@ const bodyClass = isCollection ? 'page-content page-collection' : 'page-content'
   
   {import.meta.env.DEV && (
     <div class="dev-tools">
-      {personSlug ? (
-        <a href={`/edit-person?slug=${personSlug}`}>👤 Edit Person</a>
-      ) : (
+      {editUser ? (
         <>
-          <a href={`/edit?page=${Astro.url.pathname}`}>✏️ Edit Content</a>
-          {albumDir && <a href={`/manage-photos?album=${albumDir}&page=${Astro.url.pathname}`}>📸 Manage Photos</a>}
+          {personSlug ? (
+            <a href={`/edit-person?slug=${personSlug}`}>👤 Edit Person</a>
+          ) : (
+            <>
+              <a href={`/edit?page=${Astro.url.pathname}`}>✏️ Edit Content</a>
+              {albumDir && <a href={`/manage-photos?album=${albumDir}&page=${Astro.url.pathname}`}>📸 Manage Photos</a>}
+            </>
+          )}
+          <button type="button" id="dev-logout" title={`Logged in as ${editUser}`}>🚪 Log out</button>
         </>
+      ) : (
+        <a href={`/login?next=${encodeURIComponent(Astro.url.pathname)}`}>🔒 Log in</a>
       )}
     </div>
+  )}
+
+  {import.meta.env.DEV && (
+    <script>
+      document.getElementById('dev-logout')?.addEventListener('click', async () => {
+        await fetch('/api/auth/logout', { method: 'POST' });
+        window.location.reload();
+      });
+    </script>
   )}
 </BaseLayout>

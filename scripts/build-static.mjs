@@ -21,7 +21,12 @@ const PAGES = path.join(ROOT, 'src', 'pages');
 const STASH = path.join(ROOT, '.dev-tools-stash');
 
 // Paths (relative to src/pages) that must be removed for a static build.
-const DEV_ONLY = ['edit.astro', 'edit-person.astro', 'manage-photos.astro', 'api'];
+const DEV_ONLY = ['edit.astro', 'edit-person.astro', 'manage-photos.astro', 'login.astro', 'api'];
+
+// Files outside src/pages that must also be removed for a static build.
+// The auth middleware is DEV-only; keeping it out guarantees the build stays
+// fully static (no middleware runs at prerender time, no adapter needed).
+const EXTRA_DEV_ONLY = [path.join('src', 'middleware.ts')];
 
 async function exists(p) {
   try {
@@ -36,23 +41,41 @@ async function stash() {
   await fs.mkdir(STASH, { recursive: true });
   for (const rel of DEV_ONLY) {
     const from = path.join(PAGES, rel);
-    const to = path.join(STASH, rel);
+    const to = path.join(STASH, 'pages', rel);
     if (await exists(from)) {
       await fs.mkdir(path.dirname(to), { recursive: true });
       await fs.rename(from, to);
       console.log(`  stashed src/pages/${rel}`);
     }
   }
+  for (const rel of EXTRA_DEV_ONLY) {
+    const from = path.join(ROOT, rel);
+    const to = path.join(STASH, 'root', rel);
+    if (await exists(from)) {
+      await fs.mkdir(path.dirname(to), { recursive: true });
+      await fs.rename(from, to);
+      console.log(`  stashed ${rel}`);
+    }
+  }
 }
 
 async function restore() {
   for (const rel of DEV_ONLY) {
-    const from = path.join(STASH, rel);
+    const from = path.join(STASH, 'pages', rel);
     const to = path.join(PAGES, rel);
     if (await exists(from)) {
       await fs.mkdir(path.dirname(to), { recursive: true });
       await fs.rename(from, to);
       console.log(`  restored src/pages/${rel}`);
+    }
+  }
+  for (const rel of EXTRA_DEV_ONLY) {
+    const from = path.join(STASH, 'root', rel);
+    const to = path.join(ROOT, rel);
+    if (await exists(from)) {
+      await fs.mkdir(path.dirname(to), { recursive: true });
+      await fs.rename(from, to);
+      console.log(`  restored ${rel}`);
     }
   }
   // Clean up the (now empty) stash dir.
