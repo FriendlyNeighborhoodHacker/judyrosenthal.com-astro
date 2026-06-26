@@ -625,32 +625,50 @@ function connectorFor(term: string): string {
 }
 
 /**
+ * A relationship sentence split so the anchor person's name can be rendered as a
+ * link to their profile. `prefix` is the sentence up to (and including the space
+ * before) the anchor's name, e.g. "Mary Smith is the grandmother of ". The
+ * caller appends the (linked) `anchorName` followed by a period.
+ */
+export interface RelationshipDescription {
+  prefix: string;
+  anchorId: string;
+  anchorName: string;
+}
+
+/**
  * Describe P's relationship to a single anchor A, but only for the cases the
  * site shows: P is a blood relative of A, P is A's spouse, or P is the spouse
- * of a blood relative of A. Returns the full sentence, or null if none apply.
+ * of a blood relative of A. Returns the split sentence, or null if none apply.
  */
-function relationshipToAnchor(model: GedcomModel, p: string, anchor: string, now: Date): string | null {
+function relationshipToAnchor(
+  model: GedcomModel,
+  p: string,
+  anchor: string,
+  now: Date
+): RelationshipDescription | null {
   if (p === anchor) return null;
   const pName = displayName(model, p, now);
   const aName = displayName(model, anchor, now);
   const sex = sexOf(model, p);
+  const desc = (prefix: string): RelationshipDescription => ({ prefix, anchorId: anchor, anchorName: aName });
 
   // (a) P is a blood relative of the anchor.
   const blood = bloodTerm(model, p, anchor);
   if (blood && blood !== 'self') {
-    return `${pName} is the ${blood} ${connectorFor(blood)} ${aName}.`;
+    return desc(`${pName} is the ${blood} ${connectorFor(blood)} `);
   }
 
   // (b) P is the anchor's spouse.
   if (spousesOf(model, anchor).includes(p)) {
-    return `${pName} is the ${bySex(sex, 'husband', 'wife', 'spouse')} of ${aName}.`;
+    return desc(`${pName} is the ${bySex(sex, 'husband', 'wife', 'spouse')} of `);
   }
 
   // (c) P is the spouse of a blood relative of the anchor.
   for (const s of spousesOf(model, p)) {
     const t = bloodTerm(model, s, anchor);
     if (t && t !== 'self') {
-      return `${pName} is the ${bySex(sex, 'husband', 'wife', 'spouse')} of the ${t} ${connectorFor(t)} ${aName}.`;
+      return desc(`${pName} is the ${bySex(sex, 'husband', 'wife', 'spouse')} of the ${t} ${connectorFor(t)} `);
     }
   }
 
@@ -658,19 +676,19 @@ function relationshipToAnchor(model: GedcomModel, p: string, anchor: string, now
 }
 
 /**
- * Sentence describing P's relationship, trying Judith first, then Eugenie, then
- * Haskell. Returns null when P has no qualifying relationship to any of them
- * (in which case the page shows no auto-generated description).
+ * Relationship describing P, trying Judith first, then Eugenie, then Haskell.
+ * Returns null when P has no qualifying relationship to any of them (in which
+ * case the page shows no auto-generated description).
  */
 export function describeRelationship(
   model: GedcomModel,
   p: string,
   seeds: { judith: string; haskell: string; eugenie: string },
   now: Date
-): string | null {
+): RelationshipDescription | null {
   for (const anchor of [seeds.judith, seeds.eugenie, seeds.haskell]) {
-    const sentence = relationshipToAnchor(model, p, anchor, now);
-    if (sentence) return sentence;
+    const desc = relationshipToAnchor(model, p, anchor, now);
+    if (desc) return desc;
   }
   return null;
 }

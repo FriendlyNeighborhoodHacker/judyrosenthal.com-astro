@@ -136,8 +136,10 @@ const lifeLine = lifeParts.join('; ');
 const familyDir = path.join(process.cwd(), 'src', 'assets', 'images', 'family');
 
 // Relationship-to-Judith sentence — now shown as its own row (when present),
-// no longer just a fallback for a missing description.
+// no longer just a fallback for a missing description. The anchor person's name
+// links to their profile.
 const relationship = describeRelationship(model, id, seeds, now);
+const relationshipAnchor = relationship ? linkFor(relationship.anchorId) : null;
 
 // Optional human-written description ({slug}_desc.md preferred, then .txt).
 // No auto fallback: the relationship sentence above covers that separately.
@@ -241,8 +243,17 @@ const links = (Array.isArray(meta.links) ? meta.links : []).filter(
 {/* Row 3: birth / death line (deceased only) */}
 {lifeLine && <p class="fam-life">{lifeLine}</p>}
 
-{/* Row 4: relationship-to-Judith sentence */}
-{relationship && <p class="fam-relationship">{relationship}</p>}
+{/* Row 4: relationship-to-Judith sentence (anchor name links to their page) */}
+{relationship && (
+  <p class="fam-relationship">
+    {relationship.prefix}
+    {relationshipAnchor?.href ? (
+      <a class="fam-link" href={relationshipAnchor.href}>{relationship.anchorName}</a>
+    ) : (
+      relationship.anchorName
+    )}.
+  </p>
+)}
 
 {/* Row 5: hero image */}
 {heroPath && <SectionHero hero={heroPath} heroHeight={heroHeight} heroPosition={heroPosition} alt={name} />}
