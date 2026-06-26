@@ -100,12 +100,15 @@ const heroKey = Object.keys(familyImages).find((p) => {
 });
 const heroPath = heroKey ? `images/family/${heroKey.split('/').pop()}` : null;
 
+// When no height is specified, leave it undefined so SectionHero shows the whole
+// image at its natural aspect ratio (nothing cropped). A specified height keeps
+// the fixed-height crop.
 const heroHeight =
   meta.hero_image_height != null
     ? typeof meta.hero_image_height === 'number'
       ? `${meta.hero_image_height}px`
       : meta.hero_image_height
-    : '400px';
+    : undefined;
 
 const heroPosition = heroObjectPosition(meta.hero_image_position, meta.hero_image_offset);
 

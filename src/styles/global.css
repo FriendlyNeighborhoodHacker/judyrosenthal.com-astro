@@ -471,6 +471,19 @@ a {
   display: block;
 }
 
+/* Natural mode: no fixed height, show the whole image uncropped. The
+   double-class selector beats both .section-hero rules (incl. the mobile
+   media query) regardless of source order. */
+.section-hero.section-hero-natural {
+  height: auto;
+  overflow: visible;
+}
+
+.section-hero.section-hero-natural img {
+  height: auto;
+  object-fit: contain;
+}
+
 .section-hero-lightbox {
   cursor: pointer;
 }

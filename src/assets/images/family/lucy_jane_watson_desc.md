@@ -1,0 +1,3 @@
+Lucy-Jane Watson Saks, called "Ger" by her grandson Brian from when he was trying to say "grandmother", lived to be 103, and she credited her long life to not worrying.  Worrying, she said, was a sin, and it made people sick and also made it more difficult to get well.  She was very religious and Brian would stay up sometimes and listen at her door while she prayed.  While she was religious, though, she wasn't denominational.  She married Julien David Saks and they raised their child Judy Jewish.
+
+Lucy-Jane was a teacher (taught fourth grade) and very active in Congregation Beth Israel.  She was very close to her four siblings.  She loved cooking and would cook a turkey every few weeks.  She also made homemade mayonnaise.

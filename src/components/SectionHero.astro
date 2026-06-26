@@ -9,7 +9,11 @@ interface Props {
   lightbox?: boolean;
 }
 
-const { hero, heroHeight = '250px', heroPosition = 'center', alt = '', lightbox = false } = Astro.props;
+const { hero, heroHeight, heroPosition = 'center', alt = '', lightbox = false } = Astro.props;
+
+// No height given → "natural" mode: show the whole image at its own aspect
+// ratio (nothing cropped). A height → fixed-height crop with object-fit: cover.
+const natural = !heroHeight || heroHeight === 'auto';
 
 const images = import.meta.glob<{ default: ImageMetadata }>('/src/assets/**/*.{jpeg,jpg,png,gif}');
 const imagePath = `/src/assets/${hero}`;
@@ -20,12 +24,12 @@ const heroFilename = hero.split('/').pop() || '';
 
 {imageModule && (
   <div
-    class={`section-hero${lightbox ? ' section-hero-lightbox lightbox-item' : ''}`}
-    style={`height: ${heroHeight}`}
+    class={`section-hero${natural ? ' section-hero-natural' : ''}${lightbox ? ' section-hero-lightbox lightbox-item' : ''}`}
+    style={natural ? undefined : `height: ${heroHeight}`}
     data-desc={lightbox ? alt : undefined}
     data-filename={lightbox ? heroFilename : undefined}
   >
-    <Image src={imageModule()} alt={alt} width={1200} style={`object-position: ${heroPosition}`} />
+    <Image src={imageModule()} alt={alt} width={1200} style={natural ? undefined : `object-position: ${heroPosition}`} />
   </div>
 )}
 
