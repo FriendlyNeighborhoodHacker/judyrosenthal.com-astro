@@ -8,7 +8,7 @@ export const POST: APIRoute = async ({ cookies }) => {
   const guard = devGuard();
   if (guard) return guard;
 
-  cookies.delete(COOKIE_NAME, { path: '/' });
+  cookies.delete(COOKIE_NAME, { path: '/', httpOnly: true, sameSite: 'lax' });
   return new Response(JSON.stringify({ ok: true }), {
     headers: { 'Content-Type': 'application/json' },
   });
