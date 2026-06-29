@@ -73,9 +73,10 @@ const bodyClass = isCollection ? 'page-content page-collection' : 'page-content'
 
   {import.meta.env.DEV && (
     <script>
-      document.getElementById('dev-logout')?.addEventListener('click', async () => {
-        await fetch('/api/auth/logout', { method: 'POST' });
-        window.location.reload();
+      document.getElementById('dev-logout')?.addEventListener('click', () => {
+        // Navigate to the logout endpoint, which will clear the cookie via
+        // a Set-Cookie response header and redirect back here.
+        window.location.href = '/api/auth/logout?next=' + encodeURIComponent(window.location.pathname);
       });
 
       // Ask the server who's logged in (reads the httpOnly session cookie, which

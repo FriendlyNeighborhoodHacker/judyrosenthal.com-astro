@@ -4,18 +4,21 @@ import { COOKIE_NAME } from '../../../lib/auth';
 
 export const prerender = false;
 
-export const POST: APIRoute = async () => {
+export const GET: APIRoute = async ({ url }) => {
   const guard = devGuard();
   if (guard) return guard;
 
-  // Set-Cookie with Max-Age=0 tells the browser to immediately expire the cookie.
-  // This is more reliable than Astro's cookies.delete() which may not produce
-  // a correct Set-Cookie header for clearing the cookie in all environments.
+  // Redirect back to the page the user was on (or home).
+  const referer = url.searchParams.get('next') ?? '/';
+
+  // Clear the session cookie via the response headers.
+  // The browser MUST process Set-Cookie from a navigation response.
   const clearCookie = `${COOKIE_NAME}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0`;
 
-  return new Response(JSON.stringify({ ok: true }), {
+  return new Response(null, {
+    status: 302,
     headers: {
-      'Content-Type': 'application/json',
+      Location: referer,
       'Set-Cookie': clearCookie,
     },
   });
