@@ -373,6 +373,8 @@ export function resolveSeeds(model: GedcomModel): {
   judith: string;
   haskell: string;
   eugenie: string;
+  annette: string;
+  sol: string;
 } {
   const find = (label: string, pred: (i: Individual) => boolean): string => {
     const matches = [...model.individuals.values()].filter(pred);
@@ -394,13 +396,23 @@ export function resolveSeeds(model: GedcomModel): {
     const s = normalizeForMatch(i.surname);
     return g.startsWith('haskell') && s === 'rosenthal';
   });
+  const annette = find('Annette Rosenthal', (i) => {
+    const g = normalizeForMatch(i.given);
+    const s = normalizeForMatch(i.surname);
+    return g.startsWith('annette') && s === 'rosenthal';
+  });
+  const sol = find('Sol Weiner', (i) => {
+    const g = normalizeForMatch(i.given);
+    const s = normalizeForMatch(i.surname);
+    return g.startsWith('sol') && s === 'weiner';
+  });
   const eugenie = find('Eugenie Lang', (i) => {
     const g = normalizeForMatch(i.given);
     const s = normalizeForMatch(i.surname);
     return g.startsWith('eugenie') && s === 'lang';
   });
 
-  return { judith, haskell, eugenie };
+  return { judith, haskell, eugenie, annette , sol};
 }
 
 function collectAncestors(model: GedcomModel, id: string, into: Set<string>): void {
@@ -441,12 +453,12 @@ function collectDescendants(model: GedcomModel, id: string, into: Set<string>): 
  */
 export function buildIncludedIds(
   model: GedcomModel,
-  seeds: { judith: string; haskell: string; eugenie: string }
+  seeds: { judith: string; haskell: string; eugenie: string , annette: string, sol: string}
 ): Set<string> {
   const included = new Set<string>();
 
   // Seeds + all their ancestors.
-  for (const seed of [seeds.judith, seeds.haskell, seeds.eugenie]) {
+  for (const seed of [seeds.judith, seeds.haskell, seeds.eugenie, seeds.annette, seeds.sol]) {
     included.add(seed);
     collectAncestors(model, seed, included);
   }
@@ -683,10 +695,10 @@ function relationshipToAnchor(
 export function describeRelationship(
   model: GedcomModel,
   p: string,
-  seeds: { judith: string; haskell: string; eugenie: string },
+  seeds: { judith: string; haskell: string; eugenie: string, annette: string, sol: string },
   now: Date
 ): RelationshipDescription | null {
-  for (const anchor of [seeds.judith, seeds.eugenie, seeds.haskell]) {
+  for (const anchor of [seeds.judith, seeds.eugenie, seeds.haskell, seeds.annette, seeds.sol]) {
     const desc = relationshipToAnchor(model, p, anchor, now);
     if (desc) return desc;
   }
